@@ -1,0 +1,44 @@
+{
+  "proxy": {
+    "timeout_ms": 5000,
+    "max_body_size_mb": 10,
+    "default_headers": {
+      "X-Powered-By": "Go-Proxy-Guard"
+    }
+  },
+  "token": {
+    "exp": 1440,
+    "refresh_exp": 10080,
+    "max_jwt_size_bytes": 4096,
+    "alg_supported": [
+      "HS256",
+      "RS256",
+      "RS512",
+      "ES256",
+      "EdDSA"
+    ],
+    "typ_supported": [
+      "JWT"
+    ],
+    "ip_whitelist": []
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": 0,
+    "key_prefix": "go-proxy-guard:"
+  },
+  "logging": {
+    "level": "info",
+    "output": "/var/log/go-proxy-guard/proxy.log",
+    "rotation": {
+      "max_size_mb": 100,
+      "max_age_days": 7,
+      "max_backups": 10,
+      "compress": true
+    },
+    "format": "json"
+  }
+}
+

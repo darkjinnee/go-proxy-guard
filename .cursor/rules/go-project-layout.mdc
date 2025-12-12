@@ -1,0 +1,22 @@
+---
+description: Go Project Layout
+globs:
+alwaysApply: true
+---
+
+- Все проекты на Go должны соответствовать структуре из https://github.com/golang-standards/project-layout
+- Исходный код приложения хранится в ./cmd/<app-name>
+- Внутренний код — в ./internal
+- Общие библиотеки — в ./pkg
+- Конфигурации — в ./configs
+- Скрипты сборки/деплоя — в ./scripts
+- Документация — в ./docs
+- API-описания — в ./api
+- Статика — в ./web
+- Внешние зависимости — в ./third_party
+- Бинарники и артефакты — в ./bin (не коммитить)
+- Makefile/Taskfile должен быть в корне
+- Domain logic — в internal/<domain>
+- Transport (http/grpc) — в internal/transport
+- Repository/storage — в internal/repository
+- Тесты: рядом с кодом (*_test.go) или в ./test

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: go-proxy-guard-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - proxy-guard-network
+
+  proxy-guard:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    container_name: go-proxy-guard
+    ports:
+      - "8080:8080"
+    volumes:
+      # Монтируем конфигурационные файлы (можно переопределить)
+      - ../configs:/app/configs:ro
+      # Монтируем директорию для ключей (должна существовать на хосте)
+      - keys-data:/var/lib/go-proxy-guard/keys
+      # Монтируем директорию для логов
+      - logs-data:/var/log/go-proxy-guard
+    environment:
+      - LISTEN_ADDR=:8080
+      - APP_CONFIG=/app/configs/app.json
+      - PROXY_CONFIG=/app/configs/proxy.json
+      - KEYS_DIR=/var/lib/go-proxy-guard/keys
+      # Мастер-ключ для шифрования ключей (ОБЯЗАТЕЛЬНО установить в продакшене!)
+      # - MASTER_KEY=your-master-key-here
+      # Настройки Redis задаются в configs/app.json (host: "redis")
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - proxy-guard-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/tokens/generate || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  redis-data:
+    driver: local
+  keys-data:
+    driver: local
+  logs-data:
+    driver: local
+
+networks:
+  proxy-guard-network:
+    driver: bridge
+

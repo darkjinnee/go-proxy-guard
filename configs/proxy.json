@@ -1,0 +1,57 @@
+{
+  "proxy": {
+    "timeout_ms": 5000,
+    "max_body_size_mb": 10,
+    "default_headers": {
+      "X-Powered-By": "Go-Proxy-Guard"
+    }
+  },
+  "domains": {
+    "api.example.com": {
+      "routes": [
+        {
+          "match": {
+            "path": "/v1/users/*",
+            "method": ["GET", "POST"],
+            "ip_whitelist": ["10.0.0.0/24", "192.168.1.0/24"]
+          },
+          "forward_to": {
+            "url": "http://users-service.internal:8080",
+            "add_headers": {
+              "X-Service-Name": "users"
+            }
+          }
+        },
+        {
+          "match": {
+            "path": "/v1/orders/**",
+            "method": ["*"]
+          },
+          "forward_to": {
+            "url": "http://orders.internal:9000",
+            "add_headers": {
+              "X-Service-Name": "orders"
+            }
+          }
+        }
+      ]
+    },
+    "admin.example.com": {
+      "routes": [
+        {
+          "match": {
+            "path": "/admin/*",
+            "method": ["*"]
+          },
+          "forward_to": {
+            "url": "http://admin.internal:7000",
+            "add_headers": {
+              "X-Admin": "true"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
