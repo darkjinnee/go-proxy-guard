@@ -12,14 +12,25 @@ func checkIPWhitelist(clientIP string, whitelist []string) error {
 		return nil // Whitelist не настроен, доступ разрешен
 	}
 
-	ip := net.ParseIP(clientIP)
+	// Нормализуем IP адрес (убираем квадратные скобки для IPv6)
+	normalizedIP := normalizeIP(clientIP)
+	
+	ip := net.ParseIP(normalizedIP)
 	if ip == nil {
 		return fmt.Errorf("невалидный IP адрес: %s", clientIP)
 	}
 
+	// Автоматически разрешаем localhost адреса (для разработки)
+	if ip.IsLoopback() {
+		return nil
+	}
+
 	for _, allowed := range whitelist {
+		// Нормализуем разрешенный IP для сравнения
+		normalizedAllowed := normalizeIP(allowed)
+		
 		// Проверяем точное совпадение IP
-		if allowed == clientIP {
+		if normalizedAllowed == normalizedIP || allowed == clientIP {
 			return nil
 		}
 
@@ -50,30 +61,77 @@ func extractClientIP(remoteAddr, xForwardedFor, xRealIP string) string {
 		if len(ips) > 0 {
 			ip := strings.TrimSpace(ips[0])
 			if ip != "" {
-				// Удаляем порт, если есть
-				if idx := strings.Index(ip, ":"); idx != -1 {
-					ip = ip[:idx]
-				}
-				return ip
+				return normalizeIP(ip)
 			}
 		}
 	}
 
 	if xRealIP != "" {
 		ip := strings.TrimSpace(xRealIP)
-		if idx := strings.Index(ip, ":"); idx != -1 {
-			ip = ip[:idx]
-		}
-		return ip
+		return normalizeIP(ip)
 	}
 
-	// Извлекаем IP из RemoteAddr (формат: "ip:port")
+	// Извлекаем IP из RemoteAddr (формат: "ip:port" или "[ip]:port" для IPv6)
 	if remoteAddr != "" {
-		if idx := strings.LastIndex(remoteAddr, ":"); idx != -1 {
-			return remoteAddr[:idx]
-		}
-		return remoteAddr
+		return normalizeIP(remoteAddr)
 	}
 
 	return ""
+}
+
+// normalizeIP нормализует IP адрес, убирая порт и квадратные скобки
+func normalizeIP(addr string) string {
+	// Убираем пробелы
+	addr = strings.TrimSpace(addr)
+	
+	// Если адрес уже в квадратных скобках без порта (например, [::1])
+	if strings.HasPrefix(addr, "[") && strings.HasSuffix(addr, "]") {
+		// Проверяем, есть ли порт после скобок
+		if idx := strings.Index(addr, "]:"); idx != -1 {
+			// Формат: [::1]:8080
+			host := addr[1:idx]
+			return host
+		}
+		// Формат: [::1] без порта
+		return addr[1 : len(addr)-1]
+	}
+
+	// Пробуем распарсить как адрес с портом (формат: [::1]:8080 или 127.0.0.1:8080)
+	host, _, err := net.SplitHostPort(addr)
+	if err == nil {
+		return host
+	}
+
+	// Если не удалось распарсить, проверяем, это валидный IP адрес
+	if net.ParseIP(addr) != nil {
+		return addr
+	}
+
+	// Пытаемся извлечь IP, удаляя все после последнего двоеточия (для IPv4)
+	// Для IPv4 формат: 127.0.0.1:8080
+	lastColon := strings.LastIndex(addr, ":")
+	if lastColon != -1 {
+		// Проверяем, не является ли это частью IPv6 адреса
+		// Если после последнего двоеточия только цифры, это порт
+		afterColon := addr[lastColon+1:]
+		if isNumeric(afterColon) {
+			potentialIP := addr[:lastColon]
+			// Проверяем, это валидный IP
+			if net.ParseIP(potentialIP) != nil {
+				return potentialIP
+			}
+		}
+	}
+
+	return addr
+}
+
+// isNumeric проверяет, состоит ли строка только из цифр
+func isNumeric(s string) bool {
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
 }
