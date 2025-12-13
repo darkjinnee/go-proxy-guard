@@ -12,12 +12,12 @@ type Config struct {
 func LoadConfig(appPath, proxyPath string) (*Config, error) {
 	appCfg, err := LoadAppConfig(appPath)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка загрузки app.json: %w", err)
+		return nil, fmt.Errorf("error loading app.json: %w", err)
 	}
 
 	proxyCfg, err := LoadProxyConfig(proxyPath)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка загрузки proxy.json: %w", err)
+		return nil, fmt.Errorf("error loading proxy.json: %w", err)
 	}
 
 	return &Config{

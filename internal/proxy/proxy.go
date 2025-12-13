@@ -46,7 +46,7 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusUnauthorized,
-			Message: fmt.Sprintf("Ошибка извлечения токена: %v", err),
+			Message: fmt.Sprintf("error extracting token: %v", err),
 		}
 	}
 
@@ -54,7 +54,7 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 	if len(token) > s.appConfig.Token.MaxJWTSizeBytes {
 		return nil, &ProxyError{
 			Code:    http.StatusBadRequest,
-			Message: fmt.Sprintf("Размер JWT токена превышает максимальный (%d байт)", s.appConfig.Token.MaxJWTSizeBytes),
+			Message: fmt.Sprintf("JWT token size exceeds maximum (%d bytes)", s.appConfig.Token.MaxJWTSizeBytes),
 		}
 	}
 
@@ -63,7 +63,7 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusUnauthorized,
-			Message: fmt.Sprintf("Ошибка определения алгоритма: %v", err),
+			Message: fmt.Sprintf("error determining algorithm: %v", err),
 		}
 	}
 
@@ -71,7 +71,7 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusUnauthorized,
-			Message: fmt.Sprintf("Токен невалиден: %v", err),
+			Message: fmt.Sprintf("token is invalid: %v", err),
 		}
 	}
 
@@ -92,7 +92,7 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusInternalServerError,
-			Message: fmt.Sprintf("Ошибка переписывания пути: %v", err),
+			Message: fmt.Sprintf("error rewriting path: %v", err),
 		}
 	}
 
@@ -113,7 +113,7 @@ func (s *Service) doProxy(
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusInternalServerError,
-			Message: fmt.Sprintf("Ошибка парсинга URL: %v", err),
+			Message: fmt.Sprintf("error parsing URL: %v", err),
 		}
 	}
 
@@ -122,7 +122,7 @@ func (s *Service) doProxy(
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusInternalServerError,
-			Message: fmt.Sprintf("Ошибка парсинга пути: %v", err),
+			Message: fmt.Sprintf("error parsing path: %v", err),
 		}
 	}
 
@@ -144,7 +144,7 @@ func (s *Service) doProxy(
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusInternalServerError,
-			Message: fmt.Sprintf("Ошибка создания запроса: %v", err),
+			Message: fmt.Sprintf("error creating request: %v", err),
 		}
 	}
 
@@ -188,12 +188,12 @@ func (s *Service) doProxy(
 		if err == context.DeadlineExceeded {
 			return nil, &ProxyError{
 				Code:    http.StatusGatewayTimeout,
-				Message: "Таймаут ожидания ответа от целевого сервиса",
+				Message: "Timeout waiting for response from target service",
 			}
 		}
 		return nil, &ProxyError{
 			Code:    http.StatusBadGateway,
-			Message: fmt.Sprintf("Ошибка подключения к целевому сервису: %v", err),
+			Message: fmt.Sprintf("error connecting to target service: %v", err),
 		}
 	}
 	defer resp.Body.Close()
@@ -203,7 +203,7 @@ func (s *Service) doProxy(
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusInternalServerError,
-			Message: fmt.Sprintf("Ошибка чтения ответа: %v", err),
+			Message: fmt.Sprintf("error reading response: %v", err),
 		}
 	}
 
@@ -242,13 +242,13 @@ func normalizeDomain(host string) string {
 // extractTokenFromHeader извлекает токен из заголовка Authorization
 func extractTokenFromHeader(authHeader string) (string, error) {
 	if authHeader == "" {
-		return "", fmt.Errorf("заголовок Authorization отсутствует")
+		return "", fmt.Errorf("Authorization header is missing")
 	}
 
 	// Формат: "Bearer <token>"
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		return "", fmt.Errorf("неверный формат заголовка Authorization")
+		return "", fmt.Errorf("invalid Authorization header format")
 	}
 
 	return parts[1], nil
@@ -258,27 +258,27 @@ func extractTokenFromHeader(authHeader string) (string, error) {
 func extractAlgorithmFromToken(tokenString string) (keys.Algorithm, error) {
 	parts := strings.Split(tokenString, ".")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("неверный формат токена")
+		return "", fmt.Errorf("invalid token format")
 	}
 
 	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
 	if err != nil {
-		return "", fmt.Errorf("ошибка декодирования header: %w", err)
+		return "", fmt.Errorf("error decoding header: %w", err)
 	}
 
 	headerStr := string(headerBytes)
 	if !strings.Contains(headerStr, `"alg"`) {
-		return "", fmt.Errorf("header не содержит alg")
+		return "", fmt.Errorf("header does not contain alg")
 	}
 
 	algStart := strings.Index(headerStr, `"alg"`)
 	if algStart == -1 {
-		return "", fmt.Errorf("не найден alg в header")
+		return "", fmt.Errorf("alg not found in header")
 	}
 
 	valueStart := strings.Index(headerStr[algStart:], `:`)
 	if valueStart == -1 {
-		return "", fmt.Errorf("неверный формат alg в header")
+		return "", fmt.Errorf("invalid alg format in header")
 	}
 
 	valueStart += algStart + 1

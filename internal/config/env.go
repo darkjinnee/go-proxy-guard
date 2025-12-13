@@ -25,7 +25,7 @@ func LoadAppConfigWithEnv(path string) (*AppConfig, error) {
 
 	// Валидируем финальную конфигурацию
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("ошибка валидации конфигурации после применения переменных окружения: %w", err)
+		return nil, fmt.Errorf("error validating config after applying environment variables: %w", err)
 	}
 
 	return cfg, nil

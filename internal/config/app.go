@@ -23,7 +23,7 @@ type KeysConfig struct {
 // Validate проверяет корректность настроек ключей
 func (c *KeysConfig) Validate() error {
 	if c.Dir == "" {
-		return fmt.Errorf("dir не может быть пустым")
+		return fmt.Errorf("dir cannot be empty")
 	}
 
 	return nil
@@ -75,16 +75,16 @@ type RotationConfig struct {
 func LoadAppConfig(path string) (*AppConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения файла конфигурации: %w", err)
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
 	var cfg AppConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("ошибка парсинга JSON: %w", err)
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("ошибка валидации конфигурации: %w", err)
+		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 
 	return &cfg, nil
@@ -118,11 +118,11 @@ func (c *AppConfig) Validate() error {
 // Validate проверяет корректность настроек проксирования
 func (c *ProxyConfig) Validate() error {
 	if c.TimeoutMS <= 0 {
-		return fmt.Errorf("timeout_ms должен быть больше 0")
+		return fmt.Errorf("timeout_ms must be greater than 0")
 	}
 
 	if c.MaxBodySizeMB <= 0 {
-		return fmt.Errorf("max_body_size_mb должен быть больше 0")
+		return fmt.Errorf("max_body_size_mb must be greater than 0")
 	}
 
 	return nil
@@ -131,23 +131,23 @@ func (c *ProxyConfig) Validate() error {
 // Validate проверяет корректность настроек токенов
 func (c *TokenConfig) Validate() error {
 	if c.Exp <= 0 {
-		return fmt.Errorf("exp должен быть больше 0")
+		return fmt.Errorf("exp must be greater than 0")
 	}
 
 	if c.RefreshExp <= 0 {
-		return fmt.Errorf("refresh_exp должен быть больше 0")
+		return fmt.Errorf("refresh_exp must be greater than 0")
 	}
 
 	if c.MaxJWTSizeBytes <= 0 {
-		return fmt.Errorf("max_jwt_size_bytes должен быть больше 0")
+		return fmt.Errorf("max_jwt_size_bytes must be greater than 0")
 	}
 
 	if len(c.AlgSupported) == 0 {
-		return fmt.Errorf("alg_supported не может быть пустым")
+		return fmt.Errorf("alg_supported cannot be empty")
 	}
 
 	if len(c.TypSupported) == 0 {
-		return fmt.Errorf("typ_supported не может быть пустым")
+		return fmt.Errorf("typ_supported cannot be empty")
 	}
 
 	return nil
@@ -156,15 +156,15 @@ func (c *TokenConfig) Validate() error {
 // Validate проверяет корректность настроек Redis
 func (c *RedisConfig) Validate() error {
 	if c.Host == "" {
-		return fmt.Errorf("host не может быть пустым")
+		return fmt.Errorf("host cannot be empty")
 	}
 
 	if c.Port <= 0 || c.Port > 65535 {
-		return fmt.Errorf("port должен быть в диапазоне 1-65535")
+		return fmt.Errorf("port must be in range 1-65535")
 	}
 
 	if c.DB < 0 {
-		return fmt.Errorf("db не может быть отрицательным")
+		return fmt.Errorf("db cannot be negative")
 	}
 
 	return nil
@@ -180,11 +180,11 @@ func (c *LoggingConfig) Validate() error {
 	}
 
 	if !validLevels[c.Level] {
-		return fmt.Errorf("недопустимый уровень логирования: %s", c.Level)
+		return fmt.Errorf("invalid logging level: %s", c.Level)
 	}
 
 	if c.Output == "" {
-		return fmt.Errorf("output не может быть пустым")
+		return fmt.Errorf("output cannot be empty")
 	}
 
 	validFormats := map[string]bool{
@@ -193,7 +193,7 @@ func (c *LoggingConfig) Validate() error {
 	}
 
 	if !validFormats[c.Format] {
-		return fmt.Errorf("недопустимый формат логирования: %s", c.Format)
+		return fmt.Errorf("invalid logging format: %s", c.Format)
 	}
 
 	if err := c.Rotation.Validate(); err != nil {
@@ -206,15 +206,15 @@ func (c *LoggingConfig) Validate() error {
 // Validate проверяет корректность настроек ротации логов
 func (c *RotationConfig) Validate() error {
 	if c.MaxSizeMB <= 0 {
-		return fmt.Errorf("max_size_mb должен быть больше 0")
+		return fmt.Errorf("max_size_mb must be greater than 0")
 	}
 
 	if c.MaxAgeDays <= 0 {
-		return fmt.Errorf("max_age_days должен быть больше 0")
+		return fmt.Errorf("max_age_days must be greater than 0")
 	}
 
 	if c.MaxBackups < 0 {
-		return fmt.Errorf("max_backups не может быть отрицательным")
+		return fmt.Errorf("max_backups cannot be negative")
 	}
 
 	return nil

@@ -26,7 +26,7 @@ func handleGenerateTokens(authService *auth.Service, log logger.Logger) http.Han
 		// Читаем тело запроса
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Error("Ошибка чтения тела запроса", logger.NewField("error", err.Error()))
+			log.Error("Error reading request body", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
@@ -35,7 +35,7 @@ func handleGenerateTokens(authService *auth.Service, log logger.Logger) http.Han
 		// Парсим JSON
 		var req auth.GenerateTokenRequest
 		if err := json.Unmarshal(body, &req); err != nil {
-			log.Warn("Ошибка парсинга JSON", logger.NewField("error", err.Error()))
+			log.Warn("Error parsing JSON", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
@@ -51,7 +51,7 @@ func handleGenerateTokens(authService *auth.Service, log logger.Logger) http.Han
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			log.Error("Ошибка кодирования ответа", logger.NewField("error", err.Error()))
+			log.Error("Error encoding response", logger.NewField("error", err.Error()))
 		}
 	}
 }
@@ -70,7 +70,7 @@ func handleRefreshTokens(authService *auth.Service, log logger.Logger) http.Hand
 		// Читаем тело запроса
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Error("Ошибка чтения тела запроса", logger.NewField("error", err.Error()))
+			log.Error("Error reading request body", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
@@ -79,7 +79,7 @@ func handleRefreshTokens(authService *auth.Service, log logger.Logger) http.Hand
 		// Парсим JSON
 		var req auth.RefreshTokenRequest
 		if err := json.Unmarshal(body, &req); err != nil {
-			log.Warn("Ошибка парсинга JSON", logger.NewField("error", err.Error()))
+			log.Warn("Error parsing JSON", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
@@ -95,7 +95,7 @@ func handleRefreshTokens(authService *auth.Service, log logger.Logger) http.Hand
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			log.Error("Ошибка кодирования ответа", logger.NewField("error", err.Error()))
+			log.Error("Error encoding response", logger.NewField("error", err.Error()))
 		}
 	}
 }
@@ -107,7 +107,7 @@ func handleProxy(proxyService *proxy.Service, log logger.Logger, cfg *config.App
 		maxBodySize := int64(cfg.Proxy.MaxBodySizeMB) * 1024 * 1024
 		body, err := io.ReadAll(io.LimitReader(r.Body, maxBodySize))
 		if err != nil {
-			log.Error("Ошибка чтения тела запроса", logger.NewField("error", err.Error()))
+			log.Error("Error reading request body", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
@@ -164,7 +164,7 @@ func handleProxy(proxyService *proxy.Service, log logger.Logger, cfg *config.App
 
 		// Копируем тело ответа
 		if _, err := w.Write(resp.Body); err != nil {
-			log.Error("Ошибка записи ответа", logger.NewField("error", err.Error()))
+			log.Error("Error writing response", logger.NewField("error", err.Error()))
 		}
 	}
 }
@@ -172,24 +172,24 @@ func handleProxy(proxyService *proxy.Service, log logger.Logger, cfg *config.App
 // handleAuthError обрабатывает ошибки аутентификации
 func handleAuthError(w http.ResponseWriter, err error, log logger.Logger) {
 	if authErr, ok := err.(*auth.AuthError); ok {
-		log.Warn("Ошибка аутентификации", logger.NewField("code", authErr.Code), logger.NewField("message", authErr.Message))
+		log.Warn("Authentication error", logger.NewField("code", authErr.Code), logger.NewField("message", authErr.Message))
 		http.Error(w, authErr.Message, authErr.HTTPStatus())
 		return
 	}
 
-	log.Error("Неизвестная ошибка аутентификации", logger.NewField("error", err.Error()))
+	log.Error("Unknown authentication error", logger.NewField("error", err.Error()))
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
 
 // handleProxyError обрабатывает ошибки проксирования
 func handleProxyError(w http.ResponseWriter, err error, log logger.Logger) {
 	if proxyErr, ok := err.(*proxy.ProxyError); ok {
-		log.Warn("Ошибка проксирования", logger.NewField("code", proxyErr.Code), logger.NewField("message", proxyErr.Message))
+		log.Warn("Proxy error", logger.NewField("code", proxyErr.Code), logger.NewField("message", proxyErr.Message))
 		http.Error(w, proxyErr.Message, proxyErr.HTTPStatus())
 		return
 	}
 
-	log.Error("Неизвестная ошибка проксирования", logger.NewField("error", err.Error()))
+	log.Error("Unknown proxy error", logger.NewField("error", err.Error()))
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 }
 

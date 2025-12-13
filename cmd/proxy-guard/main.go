@@ -27,12 +27,12 @@ func main() {
 	// Загружаем конфигурацию с поддержкой .env
 	appCfg, err := config.LoadAppConfigWithEnv(appConfigPath)
 	if err != nil {
-		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
+		log.Fatalf("Error loading config: %v", err)
 	}
 
 	proxyCfg, err := config.LoadProxyConfig(proxyConfigPath)
 	if err != nil {
-		log.Fatalf("Ошибка загрузки конфигурации прокси: %v", err)
+		log.Fatalf("Error loading proxy config: %v", err)
 	}
 
 	cfg := &config.Config{
@@ -43,7 +43,7 @@ func main() {
 	// Инициализируем логгер
 	appLogger, err := logger.New(cfg.App.Logging)
 	if err != nil {
-		log.Fatalf("Ошибка инициализации логгера: %v", err)
+		log.Fatalf("Error initializing logger: %v", err)
 	}
 	defer func() {
 		if closer, ok := appLogger.(interface{ Close() error }); ok {
@@ -51,7 +51,7 @@ func main() {
 		}
 	}()
 
-	appLogger.Info("Запуск go-proxy-guard", logger.NewField("version", version))
+	appLogger.Info("Starting go-proxy-guard", logger.NewField("version", version))
 
 	// Получаем путь к директории ключей из конфигурации (уже переопределен из .env если нужно)
 	keysDir := cfg.App.Keys.Dir
@@ -59,27 +59,27 @@ func main() {
 	// Создаем хранилище ключей
 	keyStore, err := keys.NewFileStore(keysDir)
 	if err != nil {
-		appLogger.Error("Ошибка создания хранилища ключей", logger.NewField("error", err.Error()))
-		log.Fatalf("Ошибка создания хранилища ключей: %v", err)
+		appLogger.Error("Error creating key store", logger.NewField("error", err.Error()))
+		log.Fatalf("Error creating key store: %v", err)
 	}
 
 	// Инициализируем ключи для всех поддерживаемых алгоритмов
 	if err := keyStore.InitializeKeys(cfg.App.Token.AlgSupported); err != nil {
-		appLogger.Error("Ошибка инициализации ключей", logger.NewField("error", err.Error()))
-		log.Fatalf("Ошибка инициализации ключей: %v", err)
+		appLogger.Error("Error initializing keys", logger.NewField("error", err.Error()))
+		log.Fatalf("Error initializing keys: %v", err)
 	}
 
-	appLogger.Info("Ключи инициализированы")
+	appLogger.Info("Keys initialized")
 
 	// Создаем клиент Redis
 	redisClient, err := redis.NewClient(cfg.App.Redis)
 	if err != nil {
-		appLogger.Error("Ошибка подключения к Redis", logger.NewField("error", err.Error()))
-		log.Fatalf("Ошибка подключения к Redis: %v", err)
+		appLogger.Error("Error connecting to Redis", logger.NewField("error", err.Error()))
+		log.Fatalf("Error connecting to Redis: %v", err)
 	}
 	defer redisClient.Close()
 
-	appLogger.Info("Подключение к Redis установлено")
+	appLogger.Info("Redis connection established")
 
 	// Создаем сервисы
 	authService := auth.NewService(cfg.App, keyStore, redisClient)
@@ -110,10 +110,10 @@ func main() {
 
 	// Запускаем сервер в отдельной горутине
 	go func() {
-		appLogger.Info("HTTP сервер запущен", logger.NewField("addr", server.Addr))
+		appLogger.Info("HTTP server started", logger.NewField("addr", server.Addr))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			appLogger.Error("Ошибка HTTP сервера", logger.NewField("error", err.Error()))
-			log.Fatalf("Ошибка HTTP сервера: %v", err)
+			appLogger.Error("HTTP server error", logger.NewField("error", err.Error()))
+			log.Fatalf("HTTP server error: %v", err)
 		}
 	}()
 
@@ -122,18 +122,18 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	appLogger.Info("Получен сигнал завершения, начинаем graceful shutdown")
+	appLogger.Info("Received shutdown signal, starting graceful shutdown")
 
 	// Graceful shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		appLogger.Error("Ошибка при shutdown сервера", logger.NewField("error", err.Error()))
-		log.Fatalf("Ошибка при shutdown сервера: %v", err)
+		appLogger.Error("Error during server shutdown", logger.NewField("error", err.Error()))
+		log.Fatalf("Error during server shutdown: %v", err)
 	}
 
-	appLogger.Info("Сервер остановлен")
+	appLogger.Info("Server stopped")
 }
 
 func getEnvOrDefault(key, defaultValue string) string {

@@ -16,7 +16,7 @@ func rewritePath(originalPath, pathPattern, rewritePattern string) (string, erro
 	regexPattern := globToRegex(pathPattern)
 	re, err := regexp.Compile(regexPattern)
 	if err != nil {
-		return "", fmt.Errorf("ошибка компиляции regex: %w", err)
+		return "", fmt.Errorf("error compiling regex: %w", err)
 	}
 
 	// Находим совпадения

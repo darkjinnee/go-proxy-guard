@@ -32,14 +32,14 @@ func (s *Service) GenerateTokens(
 	if !s.isAlgorithmSupported(algorithm) {
 		return nil, &AuthError{
 			Code:    ErrorCodeBadRequest,
-			Message: fmt.Sprintf("неподдерживаемый алгоритм: %s", req.Header.Alg),
+			Message: fmt.Sprintf("unsupported algorithm: %s", req.Header.Alg),
 		}
 	}
 
 	if !s.isTypeSupported(req.Header.Typ) {
 		return nil, &AuthError{
 			Code:    ErrorCodeBadRequest,
-			Message: fmt.Sprintf("неподдерживаемый тип: %s", req.Header.Typ),
+			Message: fmt.Sprintf("unsupported type: %s", req.Header.Typ),
 		}
 	}
 
@@ -68,7 +68,7 @@ func (s *Service) GenerateTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
-			Message: fmt.Sprintf("ошибка генерации access_token: %v", err),
+			Message: fmt.Sprintf("error generating access_token: %v", err),
 		}
 	}
 
@@ -84,7 +84,7 @@ func (s *Service) GenerateTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
-			Message: fmt.Sprintf("ошибка генерации refresh_token: %v", err),
+			Message: fmt.Sprintf("error generating refresh_token: %v", err),
 		}
 	}
 
@@ -100,21 +100,21 @@ func (s *Service) validateGenerateRequest(req *GenerateTokenRequest) error {
 	if req.Header.Alg == "" {
 		return &AuthError{
 			Code:    ErrorCodeBadRequest,
-			Message: "header.alg обязателен",
+			Message: "header.alg is required",
 		}
 	}
 
 	if req.Header.Typ == "" {
 		return &AuthError{
 			Code:    ErrorCodeBadRequest,
-			Message: "header.typ обязателен",
+			Message: "header.typ is required",
 		}
 	}
 
 	if len(req.Payload) == 0 {
 		return &AuthError{
 			Code:    ErrorCodeBadRequest,
-			Message: "payload не может быть пустым",
+			Message: "payload cannot be empty",
 		}
 	}
 

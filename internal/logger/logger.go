@@ -69,26 +69,26 @@ type loggerImpl struct {
 func New(cfg config.LoggingConfig) (Logger, error) {
 	level, ok := nameToLevel[cfg.Level]
 	if !ok {
-		return nil, fmt.Errorf("недопустимый уровень логирования: %s", cfg.Level)
+		return nil, fmt.Errorf("invalid logging level: %s", cfg.Level)
 	}
 
 	// Создаем директорию для логов, если не существует
 	dir := filepath.Dir(cfg.Output)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return nil, fmt.Errorf("ошибка создания директории для логов: %w", err)
+		return nil, fmt.Errorf("error creating log directory: %w", err)
 	}
 
 	// Открываем файл для записи
 	file, err := os.OpenFile(cfg.Output, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка открытия файла логов: %w", err)
+		return nil, fmt.Errorf("error opening log file: %w", err)
 	}
 
 	// Создаем менеджер ротации
 	rotation, err := newRotationManager(cfg.Output, cfg.Rotation)
 	if err != nil {
 		file.Close()
-		return nil, fmt.Errorf("ошибка создания менеджера ротации: %w", err)
+		return nil, fmt.Errorf("error creating rotation manager: %w", err)
 	}
 
 	// Создаем форматтер
@@ -100,7 +100,7 @@ func New(cfg config.LoggingConfig) (Logger, error) {
 		formatter = newTextFormatter()
 	default:
 		file.Close()
-		return nil, fmt.Errorf("недопустимый формат логирования: %s", cfg.Format)
+		return nil, fmt.Errorf("invalid logging format: %s", cfg.Format)
 	}
 
 	return &loggerImpl{
@@ -155,7 +155,7 @@ func (l *loggerImpl) log(level Level, msg string, fields ...Field) {
 	if l.rotation != nil {
 		if err := l.rotation.checkAndRotate(); err != nil {
 			// Логируем ошибку ротации, но не прерываем логирование
-			fmt.Fprintf(os.Stderr, "Ошибка ротации логов: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error rotating logs: %v\n", err)
 		}
 	}
 
@@ -172,12 +172,12 @@ func (l *loggerImpl) log(level Level, msg string, fields ...Field) {
 
 	formatted, err := l.formatter.Format(entry)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка форматирования лога: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error formatting log: %v\n", err)
 		return
 	}
 
 	if _, err := l.writer.Write(formatted); err != nil {
-		fmt.Fprintf(os.Stderr, "Ошибка записи лога: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error writing log: %v\n", err)
 	}
 }
 

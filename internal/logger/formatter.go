@@ -33,7 +33,7 @@ func (f *jsonFormatter) Format(entry *LogEntry) ([]byte, error) {
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка маршалинга JSON: %w", err)
+		return nil, fmt.Errorf("error marshaling JSON: %w", err)
 	}
 
 	return append(jsonData, '\n'), nil

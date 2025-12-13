@@ -25,7 +25,7 @@ func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keySt
 	// Получаем ключ из хранилища
 	key, err := keyStore.GetKey(algorithm)
 	if err != nil {
-		return "", fmt.Errorf("ошибка получения ключа: %w", err)
+		return "", fmt.Errorf("error getting key: %w", err)
 	}
 
 	// Преобразуем claims в jwt.MapClaims
@@ -40,13 +40,13 @@ func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keySt
 	// Получаем ключ для подписи
 	signingKey, err := g.getSigningKey(key, algorithm)
 	if err != nil {
-		return "", fmt.Errorf("ошибка получения ключа для подписи: %w", err)
+		return "", fmt.Errorf("error getting signing key: %w", err)
 	}
 
 	// Подписываем токен
 	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
-		return "", fmt.Errorf("ошибка подписи токена: %w", err)
+		return "", fmt.Errorf("error signing token: %w", err)
 	}
 
 	return tokenString, nil
@@ -75,42 +75,42 @@ func (g *generator) getSigningKey(key *keys.Key, algorithm keys.Algorithm) (inte
 	switch algorithm {
 	case keys.AlgorithmHS256:
 		if key.HMAC == nil {
-			return nil, fmt.Errorf("HMAC ключ не найден")
+			return nil, fmt.Errorf("HMAC key not found")
 		}
 		return key.HMAC, nil
 
 	case keys.AlgorithmRS256, keys.AlgorithmRS512:
 		if key.KeyPair == nil {
-			return nil, fmt.Errorf("RSA ключ не найден")
+			return nil, fmt.Errorf("RSA key not found")
 		}
 		rsaKey, ok := key.KeyPair.Private.(*rsa.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("неверный тип ключа для RSA")
+			return nil, fmt.Errorf("invalid key type for RSA")
 		}
 		return rsaKey, nil
 
 	case keys.AlgorithmES256:
 		if key.KeyPair == nil {
-			return nil, fmt.Errorf("ECDSA ключ не найден")
+			return nil, fmt.Errorf("ECDSA key not found")
 		}
 		ecdsaKey, ok := key.KeyPair.Private.(*ecdsa.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("неверный тип ключа для ECDSA")
+			return nil, fmt.Errorf("invalid key type for ECDSA")
 		}
 		return ecdsaKey, nil
 
 	case keys.AlgorithmEdDSA:
 		if key.KeyPair == nil {
-			return nil, fmt.Errorf("EdDSA ключ не найден")
+			return nil, fmt.Errorf("EdDSA key not found")
 		}
 		ed25519Key, ok := key.KeyPair.Private.(ed25519.PrivateKey)
 		if !ok {
-			return nil, fmt.Errorf("неверный тип ключа для EdDSA")
+			return nil, fmt.Errorf("invalid key type for EdDSA")
 		}
 		return ed25519Key, nil
 
 	default:
-		return nil, fmt.Errorf("неподдерживаемый алгоритм: %s", algorithm)
+		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)
 	}
 }
 

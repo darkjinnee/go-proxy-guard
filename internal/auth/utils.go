@@ -14,7 +14,7 @@ import (
 func generateUUID() string {
 	uuid := make([]byte, 16)
 	if _, err := io.ReadFull(rand.Reader, uuid); err != nil {
-		panic(fmt.Sprintf("ошибка генерации UUID: %v", err))
+		panic(fmt.Sprintf("error generating UUID: %v", err))
 	}
 
 	// Устанавливаем версию (4) и вариант
@@ -30,32 +30,32 @@ func extractAlgorithmFromToken(tokenString string) (keys.Algorithm, error) {
 	// JWT токен состоит из трех частей, разделенных точками
 	parts := strings.Split(tokenString, ".")
 	if len(parts) < 2 {
-		return "", fmt.Errorf("неверный формат токена")
+		return "", fmt.Errorf("invalid token format")
 	}
 
 	// Декодируем header (первая часть)
 	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
 	if err != nil {
-		return "", fmt.Errorf("ошибка декодирования header: %w", err)
+		return "", fmt.Errorf("error decoding header: %w", err)
 	}
 
 	// Парсим JSON header
 	// Простой парсинг для извлечения "alg"
 	headerStr := string(headerBytes)
 	if !strings.Contains(headerStr, `"alg"`) {
-		return "", fmt.Errorf("header не содержит alg")
+		return "", fmt.Errorf("header does not contain alg")
 	}
 
 	// Извлекаем значение alg
 	algStart := strings.Index(headerStr, `"alg"`)
 	if algStart == -1 {
-		return "", fmt.Errorf("не найден alg в header")
+		return "", fmt.Errorf("alg not found in header")
 	}
 
 	// Ищем значение после "alg":
 	valueStart := strings.Index(headerStr[algStart:], `:`)
 	if valueStart == -1 {
-		return "", fmt.Errorf("неверный формат alg в header")
+		return "", fmt.Errorf("invalid alg format in header")
 	}
 
 	valueStart += algStart + 1

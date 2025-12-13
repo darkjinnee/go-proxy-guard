@@ -53,16 +53,16 @@ type RouteForwardTo struct {
 func LoadProxyConfig(path string) (*ProxyRoutingConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения файла конфигурации: %w", err)
+		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
 	var cfg ProxyRoutingConfig
 	if err := json.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("ошибка парсинга JSON: %w", err)
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
 
 	if err := cfg.Validate(); err != nil {
-		return nil, fmt.Errorf("ошибка валидации конфигурации: %w", err)
+		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 
 	return &cfg, nil
@@ -75,7 +75,7 @@ func (c *ProxyRoutingConfig) Validate() error {
 	}
 
 	if len(c.Domains) == 0 {
-		return fmt.Errorf("domains не может быть пустым")
+		return fmt.Errorf("domains cannot be empty")
 	}
 
 	for domain, domainCfg := range c.Domains {
@@ -90,11 +90,11 @@ func (c *ProxyRoutingConfig) Validate() error {
 // Validate проверяет корректность глобальных настроек проксирования
 func (c *ProxyRoutingProxyConfig) Validate() error {
 	if c.TimeoutMS <= 0 {
-		return fmt.Errorf("timeout_ms должен быть больше 0")
+		return fmt.Errorf("timeout_ms must be greater than 0")
 	}
 
 	if c.MaxBodySizeMB <= 0 {
-		return fmt.Errorf("max_body_size_mb должен быть больше 0")
+		return fmt.Errorf("max_body_size_mb must be greater than 0")
 	}
 
 	return nil
@@ -103,7 +103,7 @@ func (c *ProxyRoutingProxyConfig) Validate() error {
 // Validate проверяет корректность конфигурации домена
 func (c *DomainConfig) Validate() error {
 	if len(c.Routes) == 0 {
-		return fmt.Errorf("routes не может быть пустым")
+		return fmt.Errorf("routes cannot be empty")
 	}
 
 	for i, route := range c.Routes {
@@ -131,11 +131,11 @@ func (r *Route) Validate() error {
 // Validate проверяет корректность условий совпадения
 func (m *RouteMatch) Validate() error {
 	if m.Path == "" {
-		return fmt.Errorf("path не может быть пустым")
+		return fmt.Errorf("path cannot be empty")
 	}
 
 	if len(m.Method) == 0 {
-		return fmt.Errorf("method не может быть пустым")
+		return fmt.Errorf("method cannot be empty")
 	}
 
 	// Проверка, что если указан "*", то это единственный метод
@@ -143,14 +143,14 @@ func (m *RouteMatch) Validate() error {
 	for _, method := range m.Method {
 		if method == "*" {
 			if hasWildcard {
-				return fmt.Errorf("метод '*' может быть указан только один раз")
+				return fmt.Errorf("method '*' can only be specified once")
 			}
 			hasWildcard = true
 		}
 	}
 
 	if hasWildcard && len(m.Method) > 1 {
-		return fmt.Errorf("метод '*' не может быть указан вместе с другими методами")
+		return fmt.Errorf("method '*' cannot be specified together with other methods")
 	}
 
 	return nil
@@ -159,16 +159,16 @@ func (m *RouteMatch) Validate() error {
 // Validate проверяет корректность конфигурации проксирования
 func (f *RouteForwardTo) Validate() error {
 	if f.URL == "" {
-		return fmt.Errorf("url не может быть пустым")
+		return fmt.Errorf("url cannot be empty")
 	}
 
 	// Базовая проверка формата URL
 	if !strings.HasPrefix(f.URL, "http://") && !strings.HasPrefix(f.URL, "https://") {
-		return fmt.Errorf("url должен начинаться с http:// или https://")
+		return fmt.Errorf("url must start with http:// or https://")
 	}
 
 	if f.TimeoutMS != nil && *f.TimeoutMS <= 0 {
-		return fmt.Errorf("timeout_ms должен быть больше 0")
+		return fmt.Errorf("timeout_ms must be greater than 0")
 	}
 
 	return nil
@@ -182,7 +182,7 @@ func (c *ProxyRoutingConfig) GetDomainConfig(host string) (*DomainConfig, error)
 
 	cfg, exists := c.Domains[domain]
 	if !exists {
-		return nil, fmt.Errorf("домен '%s' не найден в конфигурации", domain)
+		return nil, fmt.Errorf("domain '%s' not found in configuration", domain)
 	}
 
 	return &cfg, nil

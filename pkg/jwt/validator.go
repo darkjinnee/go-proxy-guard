@@ -25,14 +25,14 @@ func (v *validator) ValidateToken(token string, algorithm keys.Algorithm, keySto
 	// Получаем ключ из хранилища
 	key, err := keyStore.GetKey(algorithm)
 	if err != nil {
-		return nil, fmt.Errorf("ошибка получения ключа: %w", err)
+		return nil, fmt.Errorf("error getting key: %w", err)
 	}
 
 	// Парсим токен
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		// Проверяем алгоритм
 		if token.Method != v.getSigningMethod(algorithm) {
-			return nil, fmt.Errorf("неверный алгоритм подписи: %v", token.Method.Alg())
+			return nil, fmt.Errorf("invalid signing algorithm: %v", token.Method.Alg())
 		}
 
 		// Получаем ключ для проверки подписи
@@ -40,17 +40,17 @@ func (v *validator) ValidateToken(token string, algorithm keys.Algorithm, keySto
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("ошибка парсинга токена: %w", err)
+		return nil, fmt.Errorf("error parsing token: %w", err)
 	}
 
 	if !parsedToken.Valid {
-		return nil, fmt.Errorf("токен невалиден")
+		return nil, fmt.Errorf("token is invalid")
 	}
 
 	// Извлекаем claims
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("неверный формат claims")
+		return nil, fmt.Errorf("invalid claims format")
 	}
 
 	// Проверяем время истечения
@@ -77,7 +77,7 @@ func (v *validator) ValidateTokenType(token string, expectedType TokenType, algo
 	// Проверяем тип токена
 	tokenType := claims.GetType()
 	if tokenType != string(expectedType) {
-		return nil, fmt.Errorf("неверный тип токена: ожидался %s, получен %s", expectedType, tokenType)
+		return nil, fmt.Errorf("invalid token type: expected %s, got %s", expectedType, tokenType)
 	}
 
 	return claims, nil
@@ -106,42 +106,42 @@ func (v *validator) getVerificationKey(key *keys.Key, algorithm keys.Algorithm) 
 	switch algorithm {
 	case keys.AlgorithmHS256:
 		if key.HMAC == nil {
-			return nil, fmt.Errorf("HMAC ключ не найден")
+			return nil, fmt.Errorf("HMAC key not found")
 		}
 		return key.HMAC, nil
 
 	case keys.AlgorithmRS256, keys.AlgorithmRS512:
 		if key.KeyPair == nil {
-			return nil, fmt.Errorf("RSA ключ не найден")
+			return nil, fmt.Errorf("RSA key not found")
 		}
 		rsaKey, ok := key.KeyPair.Public.(*rsa.PublicKey)
 		if !ok {
-			return nil, fmt.Errorf("неверный тип публичного ключа для RSA")
+			return nil, fmt.Errorf("invalid public key type for RSA")
 		}
 		return rsaKey, nil
 
 	case keys.AlgorithmES256:
 		if key.KeyPair == nil {
-			return nil, fmt.Errorf("ECDSA ключ не найден")
+			return nil, fmt.Errorf("ECDSA key not found")
 		}
 		ecdsaKey, ok := key.KeyPair.Public.(*ecdsa.PublicKey)
 		if !ok {
-			return nil, fmt.Errorf("неверный тип публичного ключа для ECDSA")
+			return nil, fmt.Errorf("invalid public key type for ECDSA")
 		}
 		return ecdsaKey, nil
 
 	case keys.AlgorithmEdDSA:
 		if key.KeyPair == nil {
-			return nil, fmt.Errorf("EdDSA ключ не найден")
+			return nil, fmt.Errorf("EdDSA key not found")
 		}
 		ed25519Key, ok := key.KeyPair.Public.(ed25519.PublicKey)
 		if !ok {
-			return nil, fmt.Errorf("неверный тип публичного ключа для EdDSA")
+			return nil, fmt.Errorf("invalid public key type for EdDSA")
 		}
 		return ed25519Key, nil
 
 	default:
-		return nil, fmt.Errorf("неподдерживаемый алгоритм: %s", algorithm)
+		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)
 	}
 }
 
@@ -149,7 +149,7 @@ func (v *validator) getVerificationKey(key *keys.Key, algorithm keys.Algorithm) 
 func (v *validator) validateExpiration(claims jwt.MapClaims) error {
 	exp, ok := claims["exp"]
 	if !ok {
-		return fmt.Errorf("claim 'exp' отсутствует")
+		return fmt.Errorf("claim 'exp' is missing")
 	}
 
 	var expTime int64
@@ -161,13 +161,13 @@ func (v *validator) validateExpiration(claims jwt.MapClaims) error {
 	case int:
 		expTime = int64(val)
 	default:
-		return fmt.Errorf("неверный формат claim 'exp'")
+		return fmt.Errorf("invalid format for claim 'exp'")
 	}
 
 	// Проверяем, не истек ли токен
 	now := time.Now().Unix()
 	if expTime <= now {
-		return fmt.Errorf("токен истек")
+		return fmt.Errorf("token has expired")
 	}
 
 	return nil
@@ -179,12 +179,12 @@ func ParseTokenWithoutValidation(tokenString string) (Claims, error) {
 
 	token, _, err := parser.ParseUnverified(tokenString, jwt.MapClaims{})
 	if err != nil {
-		return nil, fmt.Errorf("ошибка парсинга токена: %w", err)
+		return nil, fmt.Errorf("error parsing token: %w", err)
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return nil, fmt.Errorf("неверный формат claims")
+		return nil, fmt.Errorf("invalid claims format")
 	}
 
 	result := make(Claims)

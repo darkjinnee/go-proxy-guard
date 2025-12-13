@@ -17,7 +17,7 @@ func checkIPWhitelist(clientIP string, whitelist []string) error {
 	
 	ip := net.ParseIP(normalizedIP)
 	if ip == nil {
-		return fmt.Errorf("невалидный IP адрес: %s", clientIP)
+		return fmt.Errorf("invalid IP address: %s", clientIP)
 	}
 
 	// Автоматически разрешаем localhost адреса (для разработки)
@@ -47,7 +47,7 @@ func checkIPWhitelist(clientIP string, whitelist []string) error {
 		}
 	}
 
-	return fmt.Errorf("IP адрес %s не входит в whitelist", clientIP)
+	return fmt.Errorf("IP address %s is not in whitelist", clientIP)
 }
 
 // extractClientIP извлекает IP адрес клиента из запроса

@@ -14,7 +14,7 @@ func (s *Service) findRoute(domain, path, method, clientIP string) (*config.Rout
 	// Получаем конфигурацию домена
 	domainCfg, err := s.proxyConfig.GetDomainConfig(domain)
 	if err != nil {
-		return nil, fmt.Errorf("домен не найден: %w", err)
+		return nil, fmt.Errorf("domain not found: %w", err)
 	}
 
 	// Ищем подходящий маршрут
@@ -38,7 +38,7 @@ func (s *Service) findRoute(domain, path, method, clientIP string) (*config.Rout
 		return &route, nil
 	}
 
-	return nil, fmt.Errorf("маршрут не найден для пути %s", path)
+	return nil, fmt.Errorf("route not found for path %s", path)
 }
 
 // matchPath проверяет соответствие пути паттерну
@@ -63,14 +63,14 @@ func (s *Service) checkIPAccess(clientIP string, whitelist, blacklist []string) 
 	// Проверяем blacklist
 	if len(blacklist) > 0 {
 		if s.isIPInList(clientIP, blacklist) {
-			return fmt.Errorf("IP адрес %s заблокирован", clientIP)
+			return fmt.Errorf("IP address %s is blocked", clientIP)
 		}
 	}
 
 	// Проверяем whitelist
 	if len(whitelist) > 0 {
 		if !s.isIPInList(clientIP, whitelist) {
-			return fmt.Errorf("IP адрес %s не входит в whitelist", clientIP)
+			return fmt.Errorf("IP address %s is not in whitelist", clientIP)
 		}
 	}
 

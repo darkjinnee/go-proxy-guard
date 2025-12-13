@@ -29,7 +29,7 @@ func NewClient(cfg config.RedisConfig) (*Client, error) {
 	defer cancel()
 
 	if err := rdb.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("ошибка подключения к Redis: %w", err)
+		return nil, fmt.Errorf("error connecting to Redis: %w", err)
 	}
 
 	return &Client{

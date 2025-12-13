@@ -55,7 +55,7 @@ func (rm *rotationManager) checkAndRotate() error {
 		if os.IsNotExist(err) {
 			return nil // Файл еще не создан
 		}
-		return fmt.Errorf("ошибка получения информации о файле: %w", err)
+		return fmt.Errorf("error getting file info: %w", err)
 	}
 
 	maxSizeBytes := int64(rm.maxSizeMB) * 1024 * 1024
@@ -76,14 +76,14 @@ func (rm *rotationManager) rotate() error {
 
 	// Переименовываем текущий файл
 	if err := os.Rename(rm.filename, rotatedName); err != nil {
-		return fmt.Errorf("ошибка переименования файла: %w", err)
+		return fmt.Errorf("error renaming file: %w", err)
 	}
 
 	// Сжимаем, если нужно
 	if rm.compress {
 		if err := rm.compressFile(rotatedName); err != nil {
 			// Если сжатие не удалось, оставляем файл несжатым
-			fmt.Fprintf(os.Stderr, "Ошибка сжатия файла лога: %v\n", err)
+			fmt.Fprintf(os.Stderr, "Error compressing log file: %v\n", err)
 		}
 	}
 
@@ -96,14 +96,14 @@ func (rm *rotationManager) compressFile(filename string) error {
 	// Открываем исходный файл
 	src, err := os.Open(filename)
 	if err != nil {
-		return fmt.Errorf("ошибка открытия файла для сжатия: %w", err)
+		return fmt.Errorf("error opening file for compression: %w", err)
 	}
 	defer src.Close()
 
 	// Создаем файл для сжатых данных
 	dst, err := os.Create(filename + ".gz")
 	if err != nil {
-		return fmt.Errorf("ошибка создания файла для сжатия: %w", err)
+		return fmt.Errorf("error creating file for compression: %w", err)
 	}
 	defer dst.Close()
 
@@ -113,12 +113,12 @@ func (rm *rotationManager) compressFile(filename string) error {
 
 	// Копируем данные
 	if _, err := io.Copy(gzWriter, src); err != nil {
-		return fmt.Errorf("ошибка сжатия данных: %w", err)
+		return fmt.Errorf("error compressing data: %w", err)
 	}
 
 	// Удаляем исходный файл
 	if err := os.Remove(filename); err != nil {
-		return fmt.Errorf("ошибка удаления исходного файла: %w", err)
+		return fmt.Errorf("error removing source file: %w", err)
 	}
 
 	return nil
@@ -132,7 +132,7 @@ func (rm *rotationManager) cleanOldFiles() error {
 	// Читаем все файлы в директории
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return fmt.Errorf("ошибка чтения директории: %w", err)
+		return fmt.Errorf("error reading directory: %w", err)
 	}
 
 	var logFiles []logFileInfo
@@ -159,7 +159,7 @@ func (rm *rotationManager) cleanOldFiles() error {
 			// Удаляем старый файл
 			fullPath := filepath.Join(dir, name)
 			if err := os.Remove(fullPath); err != nil {
-				fmt.Fprintf(os.Stderr, "Ошибка удаления старого файла лога %s: %v\n", fullPath, err)
+				fmt.Fprintf(os.Stderr, "Error removing old log file %s: %v\n", fullPath, err)
 			}
 			continue
 		}
@@ -182,7 +182,7 @@ func (rm *rotationManager) cleanOldFiles() error {
 	if len(logFiles) > rm.maxBackups {
 		for i := 0; i < len(logFiles)-rm.maxBackups; i++ {
 			if err := os.Remove(logFiles[i].path); err != nil {
-				fmt.Fprintf(os.Stderr, "Ошибка удаления файла лога %s: %v\n", logFiles[i].path, err)
+				fmt.Fprintf(os.Stderr, "Error removing log file %s: %v\n", logFiles[i].path, err)
 			}
 		}
 	}

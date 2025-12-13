@@ -16,7 +16,7 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 
 	// Проверяем подключение
 	if err := c.Ping(checkCtx); err != nil {
-		return fmt.Errorf("Redis недоступен: %w", err)
+		return fmt.Errorf("Redis is unavailable: %w", err)
 	}
 
 	return nil
@@ -26,7 +26,7 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 func (c *Client) GetStats(ctx context.Context) (*Stats, error) {
 	info, err := c.rdb.Info(ctx, "stats").Result()
 	if err != nil {
-		return nil, fmt.Errorf("ошибка получения статистики: %w", err)
+		return nil, fmt.Errorf("error getting statistics: %w", err)
 	}
 
 	poolStats := c.rdb.PoolStats()

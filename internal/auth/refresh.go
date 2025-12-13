@@ -26,7 +26,7 @@ func (s *Service) RefreshTokens(
 	if req.RefreshToken == "" {
 		return nil, &AuthError{
 			Code:    ErrorCodeBadRequest,
-			Message: "refresh_token обязателен",
+			Message: "refresh_token is required",
 		}
 	}
 
@@ -34,7 +34,7 @@ func (s *Service) RefreshTokens(
 	if len(req.RefreshToken) > s.config.Token.MaxJWTSizeBytes {
 		return nil, &AuthError{
 			Code:    ErrorCodeBadRequest,
-			Message: fmt.Sprintf("размер refresh_token превышает максимальный (%d байт)", s.config.Token.MaxJWTSizeBytes),
+			Message: fmt.Sprintf("refresh_token size exceeds maximum (%d bytes)", s.config.Token.MaxJWTSizeBytes),
 		}
 	}
 
@@ -43,7 +43,7 @@ func (s *Service) RefreshTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeUnauthorized,
-			Message: fmt.Sprintf("неверный формат токена: %v", err),
+			Message: fmt.Sprintf("invalid token format: %v", err),
 		}
 	}
 
@@ -52,7 +52,7 @@ func (s *Service) RefreshTokens(
 	if jti == "" {
 		return nil, &AuthError{
 			Code:    ErrorCodeUnauthorized,
-			Message: "токен невалиден: отсутствует jti",
+			Message: "token is invalid: jti is missing",
 		}
 	}
 
@@ -63,7 +63,7 @@ func (s *Service) RefreshTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeUnauthorized,
-			Message: fmt.Sprintf("ошибка определения алгоритма: %v", err),
+			Message: fmt.Sprintf("error determining algorithm: %v", err),
 		}
 	}
 
@@ -77,7 +77,7 @@ func (s *Service) RefreshTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeUnauthorized,
-			Message: fmt.Sprintf("токен невалиден: %v", err),
+			Message: fmt.Sprintf("token is invalid: %v", err),
 		}
 	}
 
@@ -86,14 +86,14 @@ func (s *Service) RefreshTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
-			Message: fmt.Sprintf("ошибка проверки токена в Redis: %v", err),
+			Message: fmt.Sprintf("error checking token in Redis: %v", err),
 		}
 	}
 
 	if used {
 		return nil, &AuthError{
 			Code:    ErrorCodeUnauthorized,
-			Message: "refresh_token уже использован",
+			Message: "refresh_token has already been used",
 		}
 	}
 
@@ -115,7 +115,7 @@ func (s *Service) RefreshTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
-			Message: fmt.Sprintf("ошибка генерации access_token: %v", err),
+			Message: fmt.Sprintf("error generating access_token: %v", err),
 		}
 	}
 
@@ -130,7 +130,7 @@ func (s *Service) RefreshTokens(
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
-			Message: fmt.Sprintf("ошибка генерации refresh_token: %v", err),
+			Message: fmt.Sprintf("error generating refresh_token: %v", err),
 		}
 	}
 
@@ -139,7 +139,7 @@ func (s *Service) RefreshTokens(
 	if err := s.redis.MarkTokenAsUsed(ctx, jti, ttlSeconds); err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
-			Message: fmt.Sprintf("ошибка сохранения токена в Redis: %v", err),
+			Message: fmt.Sprintf("error saving token to Redis: %v", err),
 		}
 	}
 

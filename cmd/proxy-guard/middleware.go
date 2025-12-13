@@ -23,7 +23,7 @@ func loggingMiddleware(next http.Handler, log logger.Logger) http.Handler {
 
 		// Логируем запрос
 		duration := time.Since(start)
-		log.Info("HTTP запрос обработан",
+		log.Info("HTTP request processed",
 			logger.NewField("method", r.Method),
 			logger.NewField("path", r.URL.Path),
 			logger.NewField("host", r.Host),
