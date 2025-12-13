@@ -44,6 +44,10 @@ master.key
 # Config overrides (если есть локальные переопределения)
 configs/*.local.json
 
+# Environment variables
+.env
+.env.local
+
 # Temporary files
 tmp/
 temp/

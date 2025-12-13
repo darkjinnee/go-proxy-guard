@@ -73,6 +73,18 @@ docker run -d --name redis -p 6379:6379 redis:7-alpine
 
 1. Настройте `configs/app.json` — глобальные настройки приложения
 2. Настройте `configs/proxy.json` — конфигурация маршрутизации
+3. (Опционально) Создайте `.env` файл для переопределения настроек из `app.json`
+
+Все настройки из `configs/app.json` можно переопределить через переменные окружения или `.env` файл. Если переменная не задана, используется значение из конфигурации.
+
+Пример `.env` файла (см. `.env.example`):
+```bash
+REDIS_HOST=localhost
+REDIS_PORT=6379
+KEYS_DIR=./keys
+LOGGING_LEVEL=debug
+MASTER_KEY=your-master-key-here
+```
 
 #### Запуск
 

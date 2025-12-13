@@ -24,10 +24,20 @@ func main() {
 	appConfigPath := getEnvOrDefault("APP_CONFIG", "configs/app.json")
 	proxyConfigPath := getEnvOrDefault("PROXY_CONFIG", "configs/proxy.json")
 
-	// Загружаем конфигурацию
-	cfg, err := config.LoadConfig(appConfigPath, proxyConfigPath)
+	// Загружаем конфигурацию с поддержкой .env
+	appCfg, err := config.LoadAppConfigWithEnv(appConfigPath)
 	if err != nil {
 		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
+	}
+
+	proxyCfg, err := config.LoadProxyConfig(proxyConfigPath)
+	if err != nil {
+		log.Fatalf("Ошибка загрузки конфигурации прокси: %v", err)
+	}
+
+	cfg := &config.Config{
+		App:   appCfg,
+		Proxy: proxyCfg,
 	}
 
 	// Инициализируем логгер
@@ -43,8 +53,8 @@ func main() {
 
 	appLogger.Info("Запуск go-proxy-guard", logger.NewField("version", version))
 
-	// Получаем путь к директории ключей из конфигурации или переменной окружения
-	keysDir := getEnvOrDefault("KEYS_DIR", cfg.App.Keys.Dir)
+	// Получаем путь к директории ключей из конфигурации (уже переопределен из .env если нужно)
+	keysDir := cfg.App.Keys.Dir
 
 	// Создаем хранилище ключей
 	keyStore, err := keys.NewFileStore(keysDir)
