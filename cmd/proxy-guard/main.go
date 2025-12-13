@@ -23,7 +23,6 @@ func main() {
 	// Определяем пути к конфигурационным файлам
 	appConfigPath := getEnvOrDefault("APP_CONFIG", "configs/app.json")
 	proxyConfigPath := getEnvOrDefault("PROXY_CONFIG", "configs/proxy.json")
-	keysDir := getEnvOrDefault("KEYS_DIR", "/var/lib/go-proxy-guard/keys")
 
 	// Загружаем конфигурацию
 	cfg, err := config.LoadConfig(appConfigPath, proxyConfigPath)
@@ -43,6 +42,9 @@ func main() {
 	}()
 
 	appLogger.Info("Запуск go-proxy-guard", logger.NewField("version", version))
+
+	// Получаем путь к директории ключей из конфигурации или переменной окружения
+	keysDir := getEnvOrDefault("KEYS_DIR", cfg.App.Keys.Dir)
 
 	// Создаем хранилище ключей
 	keyStore, err := keys.NewFileStore(keysDir)

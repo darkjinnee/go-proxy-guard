@@ -23,9 +23,9 @@
     "ip_whitelist": []
   },
   "redis": {
-    "host": "redis",
+    "host": "localhost",
     "port": 6379,
-    "password": "",
+    "password": "dev",
     "db": 0,
     "key_prefix": "go-proxy-guard:"
   },
@@ -39,6 +39,9 @@
       "compress": true
     },
     "format": "json"
+  },
+  "keys": {
+    "dir": "./keys"
   }
 }
 

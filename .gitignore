@@ -47,3 +47,5 @@ configs/*.local.json
 # Temporary files
 tmp/
 temp/
+
+proxy-guard

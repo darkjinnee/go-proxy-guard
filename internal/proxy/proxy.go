@@ -117,7 +117,17 @@ func (s *Service) doProxy(
 		}
 	}
 
-	targetURL.Path = targetPath
+	// Парсим путь с query параметрами
+	parsedPath, err := url.Parse(targetPath)
+	if err != nil {
+		return nil, &ProxyError{
+			Code:    http.StatusInternalServerError,
+			Message: fmt.Sprintf("Ошибка парсинга пути: %v", err),
+		}
+	}
+
+	targetURL.Path = parsedPath.Path
+	targetURL.RawQuery = parsedPath.RawQuery
 
 	// Определяем таймаут
 	timeout := time.Duration(s.appConfig.Proxy.TimeoutMS) * time.Millisecond

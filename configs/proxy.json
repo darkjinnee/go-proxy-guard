@@ -51,6 +51,22 @@
           }
         }
       ]
+    },
+    "example.loc": {
+      "routes": [
+        {
+          "match": {
+            "path": "*",
+            "method": ["*"]
+          },
+          "forward_to": {
+            "url": "https://smk.tryhost.ru",
+            "add_headers": {
+              "X-Admin": "true"
+            }
+          }
+        }
+      ]
     }
   }
 }

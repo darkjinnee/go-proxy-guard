@@ -12,6 +12,21 @@ type AppConfig struct {
 	Token   TokenConfig   `json:"token"`
 	Redis   RedisConfig   `json:"redis"`
 	Logging LoggingConfig `json:"logging"`
+	Keys    KeysConfig    `json:"keys"`
+}
+
+// KeysConfig представляет настройки управления ключами
+type KeysConfig struct {
+	Dir string `json:"dir"`
+}
+
+// Validate проверяет корректность настроек ключей
+func (c *KeysConfig) Validate() error {
+	if c.Dir == "" {
+		return fmt.Errorf("dir не может быть пустым")
+	}
+
+	return nil
 }
 
 // ProxyConfig представляет настройки проксирования
@@ -91,6 +106,10 @@ func (c *AppConfig) Validate() error {
 
 	if err := c.Logging.Validate(); err != nil {
 		return fmt.Errorf("logging: %w", err)
+	}
+
+	if err := c.Keys.Validate(); err != nil {
+		return fmt.Errorf("keys: %w", err)
 	}
 
 	return nil

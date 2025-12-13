@@ -127,10 +127,16 @@ func handleProxy(proxyService *proxy.Service, log logger.Logger, cfg *config.App
 			}
 		}
 
+		// Формируем путь с query параметрами
+		path := r.URL.Path
+		if r.URL.RawQuery != "" {
+			path = path + "?" + r.URL.RawQuery
+		}
+
 		// Создаем запрос для проксирования
 		proxyReq := &proxy.ProxyRequest{
 			Method:        r.Method,
-			Path:          r.URL.Path,
+			Path:          path,
 			Host:          r.Host,
 			Headers:       headers,
 			Body:          body,

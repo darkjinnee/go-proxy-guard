@@ -44,6 +44,9 @@ func TestLoadAppConfig(t *testing.T) {
 				"compress": true
 			},
 			"format": "json"
+		},
+		"keys": {
+			"dir": "./keys"
 		}
 	}`
 
@@ -103,6 +106,9 @@ func TestAppConfig_Validate(t *testing.T) {
 						MaxAgeDays: 7,
 						MaxBackups: 10,
 					},
+				},
+				Keys: KeysConfig{
+					Dir: "./keys",
 				},
 			},
 			wantErr: false,

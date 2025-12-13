@@ -35,7 +35,7 @@ services:
       - LISTEN_ADDR=:8080
       - APP_CONFIG=/app/configs/app.json
       - PROXY_CONFIG=/app/configs/proxy.json
-      - KEYS_DIR=/var/lib/go-proxy-guard/keys
+      # KEYS_DIR можно переопределить через переменную окружения, иначе берется из configs/app.json
       # Мастер-ключ для шифрования ключей (ОБЯЗАТЕЛЬНО установить в продакшене!)
       # - MASTER_KEY=your-master-key-here
       # Настройки Redis задаются в configs/app.json (host: "redis")

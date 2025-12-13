@@ -39,6 +39,9 @@
       "compress": true
     },
     "format": "json"
+  },
+  "keys": {
+    "dir": "./keys"
   }
 }
 
