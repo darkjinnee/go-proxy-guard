@@ -194,6 +194,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzN
    - Проверка алгоритма подписи (должен соответствовать алгоритму в header)
    - Проверка подписи с использованием соответствующего ключа
    - Проверка времени жизни токена (`exp` claim должен быть больше текущего времени)
+5.1. **Проверка соответствия kid и label домена** (если `label` указан в конфигурации домена):
+   - Извлечение `kid` из заголовка JWT токена
+   - Если `kid` отсутствует в заголовке токена → HTTP 403 Forbidden
+   - Если `kid` не совпадает с `label` домена → HTTP 403 Forbidden
+   - Если `label` не указан в конфигурации домена, проверка не выполняется
 6. **Извлечение claims**: При успешной валидации извлекаются claims из payload токена (исключая служебные claims: `type`, `jti`, `exp`, `iat`)
 7. **Добавление заголовков**: Claims добавляются в HTTP заголовки запроса в формате `X-JWT-<claim_name>` (например, `X-JWT-user_id`, `X-JWT-username`, `X-JWT-role`)
 8. **Маршрутизация**: Определение целевого сервиса на основе конфигурации маршрутизации (домен из Host header, путь запроса)
@@ -204,7 +209,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzN
 - **HTTP 200-599**: Ответ от целевого сервиса (проксируется без изменений)
 - **HTTP 400 Bad Request**: Host header отсутствует или пустой, размер JWT токена превышает `max_jwt_size_bytes`
 - **HTTP 401 Unauthorized**: Токен отсутствует, невалидный формат, подпись неверна, истек срок действия, тип токена не "access" или refresh токен использован повторно
-- **HTTP 403 Forbidden**: Токен валиден, но IP адрес клиента не проходит проверку whitelist/blacklist
+- **HTTP 403 Forbidden**: Токен валиден, но IP адрес клиента не проходит проверку whitelist/blacklist, или `kid` из заголовка токена не совпадает с `label` домена (если `label` указан)
 - **HTTP 404 Not Found**: Домен не найден в конфигурации или маршрут не найден для указанного домена
 - **HTTP 408 Request Timeout**: Превышен таймаут при проксировании запроса
 - **HTTP 502 Bad Gateway**: Ошибка подключения к целевому сервису
@@ -223,6 +228,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzN
 - Фильтрацию по IP адресам (whitelist/blacklist)
 - Переписывание путей (опционально)
 - Добавление кастомных HTTP заголовков
+- Проверку соответствия `kid` из заголовка JWT токена и `label` домена (опционально)
 
 #### Пример конфигурации:
 ```json
@@ -237,6 +243,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzN
 
   "domains": {
     "api.example.com": {
+      "label": "api-key-label",
       "routes": [
         {
           "match": {
@@ -308,10 +315,19 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzN
 
 ```json
 "domains": {
-  "api.example.com": { ... },
-  "admin.example.com": { ... }
+  "api.example.com": {
+    "label": "api-key-label",
+    "routes": [ ... ]
+  },
+  "admin.example.com": {
+    "routes": [ ... ]
+  }
 }
 ```
+
+**Параметры конфигурации домена**:
+- `label` (string, optional): Label для проверки соответствия `kid` из заголовка JWT токена. Если указан, при проксировании запроса проверяется, что `kid` из заголовка токена совпадает с `label` домена. Если не совпадает, запрос отклоняется с кодом 403 Forbidden. Если `label` не указан, проверка не выполняется
+- `routes` (array, required): Массив правил маршрутизации для данного домена
 
 Каждый домен содержит массив `routes` с правилами маршрутизации.
 

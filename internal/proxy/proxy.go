@@ -30,7 +30,7 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 	domain := normalizeDomain(req.Host)
 
 	// 2. Проверка домена в конфигурации
-	_, err := s.proxyConfig.GetDomainConfig(domain)
+	domainCfg, err := s.proxyConfig.GetDomainConfig(domain)
 	if err != nil {
 		return nil, &ProxyError{
 			Code:    http.StatusNotFound,
@@ -72,6 +72,31 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 		return nil, &ProxyError{
 			Code:    http.StatusUnauthorized,
 			Message: fmt.Sprintf("token is invalid: %v", err),
+		}
+	}
+
+	// 5.1. Проверка соответствия kid и label домена (если label указан)
+	if domainCfg.Label != "" {
+		kid, err := extractKidFromToken(token)
+		if err != nil {
+			return nil, &ProxyError{
+				Code:    http.StatusUnauthorized,
+				Message: fmt.Sprintf("error extracting kid from token: %v", err),
+			}
+		}
+
+		if kid == "" {
+			return nil, &ProxyError{
+				Code:    http.StatusForbidden,
+				Message: "token header does not contain kid",
+			}
+		}
+
+		if kid != domainCfg.Label {
+			return nil, &ProxyError{
+				Code:    http.StatusForbidden,
+				Message: fmt.Sprintf("token kid does not match domain label: expected %s, got %s", domainCfg.Label, kid),
+			}
 		}
 	}
 
@@ -293,4 +318,48 @@ func extractAlgorithmFromToken(tokenString string) (keys.Algorithm, error) {
 
 	alg := headerStr[valueStart:valueEnd]
 	return keys.Algorithm(alg), nil
+}
+
+// extractKidFromToken извлекает kid из заголовка токена
+func extractKidFromToken(tokenString string) (string, error) {
+	parts := strings.Split(tokenString, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid token format")
+	}
+
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return "", fmt.Errorf("error decoding header: %w", err)
+	}
+
+	headerStr := string(headerBytes)
+	if !strings.Contains(headerStr, `"kid"`) {
+		return "", nil // kid не обязателен, возвращаем пустую строку
+	}
+
+	kidStart := strings.Index(headerStr, `"kid"`)
+	if kidStart == -1 {
+		return "", nil
+	}
+
+	valueStart := strings.Index(headerStr[kidStart:], `:`)
+	if valueStart == -1 {
+		return "", fmt.Errorf("invalid kid format in header")
+	}
+
+	valueStart += kidStart + 1
+	for valueStart < len(headerStr) && (headerStr[valueStart] == ' ' || headerStr[valueStart] == '"') {
+		valueStart++
+	}
+
+	valueEnd := valueStart
+	for valueEnd < len(headerStr) && headerStr[valueEnd] != '"' && headerStr[valueEnd] != ',' && headerStr[valueEnd] != '}' {
+		valueEnd++
+	}
+
+	if valueEnd > valueStart {
+		return headerStr[valueStart:valueEnd], nil
+	}
+
+	return "", nil
 }

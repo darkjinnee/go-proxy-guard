@@ -22,6 +22,7 @@ type ProxyRoutingProxyConfig struct {
 
 // DomainConfig представляет конфигурацию маршрутов для домена
 type DomainConfig struct {
+	Label  string  `json:"label,omitempty"` // Label для проверки kid из токена (опционально)
 	Routes []Route `json:"routes"`
 }
 

@@ -8,6 +8,7 @@
   },
   "domains": {
     "api.example.com": {
+      "label": "api-key-label",
       "routes": [
         {
           "match": {
