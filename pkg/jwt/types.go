@@ -82,7 +82,7 @@ func (c Claims) GetUserClaims() Claims {
 
 // Generator представляет интерфейс для генерации JWT токенов
 type Generator interface {
-	GenerateToken(claims Claims, algorithm keys.Algorithm, keyStore keys.KeyStore) (string, error)
+	GenerateToken(claims Claims, algorithm keys.Algorithm, keyStore keys.KeyStore, kid string) (string, error)
 }
 
 // Validator представляет интерфейс для валидации JWT токенов

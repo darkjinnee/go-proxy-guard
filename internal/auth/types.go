@@ -41,6 +41,7 @@ type GenerateTokenRequest struct {
 type TokenHeader struct {
 	Alg string `json:"alg"` // Алгоритм подписи
 	Typ string `json:"typ"` // Тип токена
+	Kid string `json:"kid,omitempty"` // Key ID (опционально)
 }
 
 // GenerateTokenResponse представляет ответ на генерацию токенов

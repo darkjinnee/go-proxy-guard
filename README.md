@@ -178,7 +178,8 @@ Content-Type: application/json
 {
   "header": {
     "alg": "HS256",
-    "typ": "JWT"
+    "typ": "JWT",
+    "kid": "custom-key-id-123"
   },
   "payload": {
     "user_id": "12345",
@@ -187,6 +188,12 @@ Content-Type: application/json
   }
 }
 ```
+
+**Параметры запроса**:
+- `header.alg` (required): Алгоритм подписи токена (HS256, RS256, RS512, ES256, EdDSA)
+- `header.typ` (required): Тип токена (JWT)
+- `header.kid` (optional): Key ID для идентификации ключа в заголовке токена. Если не указан, используется ID ключа из хранилища
+- `payload.*` (required): Claims токена (данные пользователя)
 
 **Ответ:**
 ```json

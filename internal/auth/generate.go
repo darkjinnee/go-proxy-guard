@@ -64,7 +64,7 @@ func (s *Service) GenerateTokens(
 		s.config.Token.Exp,
 	)
 
-	accessToken, err := s.jwtGen.GenerateToken(accessClaims, algorithm, s.keyStore)
+	accessToken, err := s.jwtGen.GenerateToken(accessClaims, algorithm, s.keyStore, req.Header.Kid)
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
@@ -80,7 +80,7 @@ func (s *Service) GenerateTokens(
 		s.config.Token.RefreshExp,
 	)
 
-	refreshToken, err := s.jwtGen.GenerateToken(refreshClaims, algorithm, s.keyStore)
+	refreshToken, err := s.jwtGen.GenerateToken(refreshClaims, algorithm, s.keyStore, req.Header.Kid)
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,

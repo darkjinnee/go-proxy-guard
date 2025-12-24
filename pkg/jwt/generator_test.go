@@ -1,6 +1,8 @@
 package jwt
 
 import (
+	"encoding/base64"
+	"strings"
 	"testing"
 
 	"go-proxy-guard/internal/keys"
@@ -62,7 +64,7 @@ func TestGenerateToken_HS256(t *testing.T) {
 	claims := BuildClaims(TokenTypeAccess, "test-jti", Claims{"user_id": "123"}, 60)
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore)
+	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
@@ -74,6 +76,77 @@ func TestGenerateToken_HS256(t *testing.T) {
 	// Проверяем, что токен имеет правильный формат (три части, разделенные точками)
 	if len(token) == 0 {
 		t.Error("Токен должен содержать данные")
+	}
+}
+
+func TestGenerateToken_WithKid(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Создаем keyStore
+	keyStore, err := keys.NewFileStore(tmpDir)
+	if err != nil {
+		t.Fatalf("Ошибка создания keyStore: %v", err)
+	}
+
+	// Генерируем ключ
+	key, err := keyStore.GenerateKey(keys.AlgorithmHS256)
+	if err != nil {
+		t.Fatalf("Ошибка генерации ключа: %v", err)
+	}
+
+	// Создаем генератор
+	gen := NewGenerator()
+
+	// Создаем claims
+	claims := BuildClaims(TokenTypeAccess, "test-jti", Claims{"user_id": "123"}, 60)
+
+	// Генерируем токен с указанным kid
+	customKid := "custom-key-id-123"
+	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, customKid)
+	if err != nil {
+		t.Fatalf("Ошибка генерации токена: %v", err)
+	}
+
+	// Проверяем, что kid присутствует в заголовке токена
+	// Декодируем header токена
+	parts := strings.Split(token, ".")
+	if len(parts) < 2 {
+		t.Fatal("Токен должен содержать минимум 2 части")
+	}
+
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		t.Fatalf("Ошибка декодирования header: %v", err)
+	}
+
+	headerStr := string(headerBytes)
+	if !strings.Contains(headerStr, `"kid"`) {
+		t.Error("Заголовок токена должен содержать kid")
+	}
+
+	if !strings.Contains(headerStr, customKid) {
+		t.Errorf("Заголовок токена должен содержать kid=%s, но содержит: %s", customKid, headerStr)
+	}
+
+	// Тестируем генерацию без kid (должен использоваться ID ключа)
+	token2, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
+	if err != nil {
+		t.Fatalf("Ошибка генерации токена без kid: %v", err)
+	}
+
+	parts2 := strings.Split(token2, ".")
+	headerBytes2, err := base64.RawURLEncoding.DecodeString(parts2[0])
+	if err != nil {
+		t.Fatalf("Ошибка декодирования header: %v", err)
+	}
+
+	headerStr2 := string(headerBytes2)
+	if !strings.Contains(headerStr2, `"kid"`) {
+		t.Error("Заголовок токена должен содержать kid даже если не указан явно")
+	}
+
+	if !strings.Contains(headerStr2, key.Metadata.ID) {
+		t.Errorf("Заголовок токена должен содержать ID ключа=%s, но содержит: %s", key.Metadata.ID, headerStr2)
 	}
 }
 

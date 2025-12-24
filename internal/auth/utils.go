@@ -72,3 +72,53 @@ func extractAlgorithmFromToken(tokenString string) (keys.Algorithm, error) {
 	alg := headerStr[valueStart:valueEnd]
 	return keys.Algorithm(alg), nil
 }
+
+// extractKidFromToken извлекает kid из header токена
+func extractKidFromToken(tokenString string) string {
+	// JWT токен состоит из трех частей, разделенных точками
+	parts := strings.Split(tokenString, ".")
+	if len(parts) < 2 {
+		return ""
+	}
+
+	// Декодируем header (первая часть)
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return ""
+	}
+
+	// Парсим JSON header для извлечения "kid"
+	headerStr := string(headerBytes)
+	if !strings.Contains(headerStr, `"kid"`) {
+		return ""
+	}
+
+	// Извлекаем значение kid
+	kidStart := strings.Index(headerStr, `"kid"`)
+	if kidStart == -1 {
+		return ""
+	}
+
+	// Ищем значение после "kid":
+	valueStart := strings.Index(headerStr[kidStart:], `:`)
+	if valueStart == -1 {
+		return ""
+	}
+
+	valueStart += kidStart + 1
+	// Пропускаем пробелы и кавычки
+	for valueStart < len(headerStr) && (headerStr[valueStart] == ' ' || headerStr[valueStart] == '"') {
+		valueStart++
+	}
+
+	valueEnd := valueStart
+	for valueEnd < len(headerStr) && headerStr[valueEnd] != '"' && headerStr[valueEnd] != ',' && headerStr[valueEnd] != '}' {
+		valueEnd++
+	}
+
+	if valueEnd > valueStart {
+		return headerStr[valueStart:valueEnd]
+	}
+
+	return ""
+}

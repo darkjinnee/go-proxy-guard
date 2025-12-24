@@ -111,7 +111,10 @@ func (s *Service) RefreshTokens(
 		s.config.Token.Exp,
 	)
 
-	accessToken, err := s.jwtGen.GenerateToken(accessClaims, algorithm, s.keyStore)
+	// Извлекаем kid из исходного токена, если он есть
+	kid := extractKidFromToken(req.RefreshToken)
+
+	accessToken, err := s.jwtGen.GenerateToken(accessClaims, algorithm, s.keyStore, kid)
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,
@@ -126,7 +129,7 @@ func (s *Service) RefreshTokens(
 		s.config.Token.RefreshExp,
 	)
 
-	refreshToken, err := s.jwtGen.GenerateToken(refreshClaims, algorithm, s.keyStore)
+	refreshToken, err := s.jwtGen.GenerateToken(refreshClaims, algorithm, s.keyStore, kid)
 	if err != nil {
 		return nil, &AuthError{
 			Code:    ErrorCodeInternal,

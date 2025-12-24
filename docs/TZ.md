@@ -31,8 +31,9 @@
 ```json
 {
   "header": {
-  "alg": "HS256",
-  "typ": "JWT"
+    "alg": "HS256",
+    "typ": "JWT",
+    "kid": "custom-key-id-123"
   },
   "payload": {
     "user_id": "12345",
@@ -45,6 +46,7 @@
 **Параметры**:
 - `header.alg` (required): Алгоритм подписи токена. Должен быть из списка поддерживаемых алгоритмов в конфигурации
 - `header.typ` (required): Тип токена. Должен быть из списка поддерживаемых типов в конфигурации
+- `header.kid` (optional): Key ID (идентификатор ключа) для включения в заголовок JWT токена. Если указан, используется в заголовке токена. Если не указан, используется ID ключа из хранилища (`key.Metadata.ID`). Поле `kid` позволяет идентифицировать ключ, использованный для подписи токена, что полезно при использовании нескольких ключей для одного алгоритма
 - `payload.*` (required): Claims токена (данные пользователя). Эти claims будут включены в оба токена (access_token и refresh_token). Поле `exp` из payload игнорируется, время жизни токенов берется из конфигурации
 
 **Response** (HTTP 200 OK):
@@ -62,6 +64,12 @@
 - `exp` (integer, required): Время истечения токена в формате Unix timestamp (секунды). Рассчитывается как текущее время сервера + время жизни токена из конфигурации
 - `iat` (integer, required): Время создания токена в формате Unix timestamp (секунды). Текущее время сервера на момент генерации
 - Все claims из `payload` запроса (например, `user_id`, `username`, `role` и т.д.)
+
+**Заголовок JWT токена**:
+Заголовок JWT токена (header) содержит следующие поля:
+- `alg` (string, required): Алгоритм подписи токена (HS256, RS256, RS512, ES256, EdDSA)
+- `typ` (string, required): Тип токена (JWT)
+- `kid` (string, required): Key ID (идентификатор ключа), используемый для подписи токена. Если `header.kid` указан в запросе на генерацию токена, используется он; если не указан, используется ID ключа из хранилища (`key.Metadata.ID`). При обновлении токенов `kid` извлекается из исходного refresh_token и передается в новые токены
 
 **Время жизни токенов**:
 - `access_token`: Время жизни берется из `token.exp` конфигурации (в минутах), конвертируется в секунды и добавляется к текущему времени
@@ -84,8 +92,8 @@
    - Расчет времени истечения для access_token: `exp_access = iat + (token.exp * 60)` (конвертация минут в секунды)
    - Расчет времени истечения для refresh_token: `exp_refresh = iat + (token.refresh_exp * 60)` (конвертация минут в секунды)
    - Объединение claims из `payload` запроса со стандартными claims (`type`, `jti`, `exp`, `iat`)
-5. **Генерация access_token**: Создание JWT токена с claims: `{type: "access", jti: jti_access, ...payload, exp: exp_access, iat: iat}` с использованием указанного алгоритма подписи и ключа
-6. **Генерация refresh_token**: Создание JWT токена с claims: `{type: "refresh", jti: jti_refresh, ...payload, exp: exp_refresh, iat: iat}` с использованием указанного алгоритма подписи и ключа
+5. **Генерация access_token**: Создание JWT токена с claims: `{type: "access", jti: jti_access, ...payload, exp: exp_access, iat: iat}` с использованием указанного алгоритма подписи и ключа. В заголовок токена добавляется поле `kid` (Key ID): если `header.kid` указан в запросе, используется он; если не указан, используется ID ключа из метаданных (`key.Metadata.ID`)
+6. **Генерация refresh_token**: Создание JWT токена с claims: `{type: "refresh", jti: jti_refresh, ...payload, exp: exp_refresh, iat: iat}` с использованием указанного алгоритма подписи и ключа. В заголовок токена добавляется поле `kid` (Key ID) аналогично access_token
 7. **Возврат токенов**: Оба токена возвращаются в ответе в формате JSON
 
 ### Эндпоинт обновления токенов (refresh)
@@ -140,12 +148,13 @@
 6. **Извлечение данных пользователя**: При успешной валидации извлекаются все claims из payload токена, кроме служебных (`type`, `jti`, `exp`, `iat`)
 7. **Генерация новых токенов**: 
    - Получение текущего времени сервера в формате Unix timestamp (секунды) - `iat`
+   - Извлечение `kid` из заголовка исходного refresh_token (если присутствует)
    - Генерация уникального идентификатора для нового access_token: `jti_access = UUID v4`
    - Генерация уникального идентификатора для нового refresh_token: `jti_refresh = UUID v4`
    - Расчет времени истечения для нового access_token: `exp_access = iat + (token.exp * 60)`
    - Расчет времени истечения для нового refresh_token: `exp_refresh = iat + (token.refresh_exp * 60)`
-   - Генерация нового access_token с claims: `{type: "access", jti: jti_access, ...user_data, exp: exp_access, iat: iat}`
-   - Генерация нового refresh_token с claims: `{type: "refresh", jti: jti_refresh, ...user_data, exp: exp_refresh, iat: iat}`
+   - Генерация нового access_token с claims: `{type: "access", jti: jti_access, ...user_data, exp: exp_access, iat: iat}`. В заголовок токена добавляется `kid`: если `kid` был извлечен из исходного токена, используется он; если нет, используется ID ключа из метаданных
+   - Генерация нового refresh_token с claims: `{type: "refresh", jti: jti_refresh, ...user_data, exp: exp_refresh, iat: iat}`. В заголовок токена добавляется `kid` аналогично access_token
 8. **Помечение токена как использованного**: Сохранение использованного refresh_token в Redis с ключом `refresh_token:<jti>`, где `jti` - идентификатор использованного refresh_token из payload, и TTL равным времени жизни refresh_token из конфигурации (`token.refresh_exp` в секундах). Это предотвращает повторное использование токена
 9. **Возврат новых токенов**: Новая пара токенов возвращается в ответе в формате JSON
 

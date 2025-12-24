@@ -37,7 +37,7 @@ func TestValidateToken_HS256(t *testing.T) {
 	}
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore)
+	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestValidateTokenType(t *testing.T) {
 	}
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore)
+	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestValidateToken_Expired(t *testing.T) {
 	}
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore)
+	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}

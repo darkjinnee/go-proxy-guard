@@ -21,7 +21,7 @@ func NewGenerator() Generator {
 }
 
 // GenerateToken генерирует JWT токен с указанными claims
-func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keyStore keys.KeyStore) (string, error) {
+func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keyStore keys.KeyStore, kid string) (string, error) {
 	// Получаем ключ из хранилища
 	key, err := keyStore.GetKey(algorithm)
 	if err != nil {
@@ -36,6 +36,14 @@ func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keySt
 
 	// Создаем токен
 	token := jwt.NewWithClaims(g.getSigningMethod(algorithm), jwtClaims)
+
+	// Добавляем kid в заголовок, если указан, иначе используем ID ключа
+	if kid != "" {
+		token.Header["kid"] = kid
+	} else {
+		// Используем ID ключа из метаданных
+		token.Header["kid"] = key.Metadata.ID
+	}
 
 	// Получаем ключ для подписи
 	signingKey, err := g.getSigningKey(key, algorithm)
