@@ -35,7 +35,7 @@ Thumbs.db
 logs/
 
 # Keys (не коммитить ключи!)
-keys/
+/keys/
 *.key
 *.private
 *.public

@@ -54,6 +54,7 @@
       ]
     },
     "example.loc": {
+      "label": "api-key-label",
       "routes": [
         {
           "match": {
@@ -61,7 +62,7 @@
             "method": ["*"]
           },
           "forward_to": {
-            "url": "https://smk.tryhost.ru",
+            "url": "https://test999.free.beeceptor.com",
             "add_headers": {
               "X-Admin": "true"
             }
