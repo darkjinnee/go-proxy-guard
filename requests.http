@@ -1,0 +1,335 @@
+### Go-Proxy-Guard API Examples
+### Базовый URL (по умолчанию сервер слушает на :8080)
+@baseUrl = http://localhost:8080
+
+### Переменные для токенов
+@accessToken = your-access-token-here
+@refreshToken = your-refresh-token-here
+
+###############################################################################
+# Генерация JWT токенов
+###############################################################################
+
+### Генерация токенов с алгоритмом HS256
+POST {{baseUrl}}/api/v1/tokens/generate
+Content-Type: application/json
+
+{
+  "header": {
+    "alg": "HS256",
+    "typ": "JWT",
+    "kid": "custom-key-id-123"
+  },
+  "payload": {
+    "user_id": "12345",
+    "username": "johndoe",
+    "role": "admin"
+  }
+}
+
+### Генерация токенов с алгоритмом RS256
+POST {{baseUrl}}/api/v1/tokens/generate
+Content-Type: application/json
+
+{
+  "header": {
+    "alg": "RS256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "user_id": "67890",
+    "username": "janedoe",
+    "role": "user",
+    "email": "jane@example.com"
+  }
+}
+
+### Генерация токенов с алгоритмом RS512
+POST {{baseUrl}}/api/v1/tokens/generate
+Content-Type: application/json
+
+{
+  "header": {
+    "alg": "RS512",
+    "typ": "JWT",
+    "kid": "rsa-key-456"
+  },
+  "payload": {
+    "user_id": "11111",
+    "username": "testuser",
+    "role": "moderator",
+    "permissions": ["read", "write"]
+  }
+}
+
+### Генерация токенов с алгоритмом ES256
+POST {{baseUrl}}/api/v1/tokens/generate
+Content-Type: application/json
+
+{
+  "header": {
+    "alg": "ES256",
+    "typ": "JWT"
+  },
+  "payload": {
+    "user_id": "22222",
+    "username": "ecdsa_user",
+    "role": "admin"
+  }
+}
+
+### Генерация токенов с алгоритмом EdDSA
+POST {{baseUrl}}/api/v1/tokens/generate
+Content-Type: application/json
+
+{
+  "header": {
+    "alg": "EdDSA",
+    "typ": "JWT",
+    "kid": "eddsa-key-789"
+  },
+  "payload": {
+    "user_id": "33333",
+    "username": "eddsa_user",
+    "role": "user"
+  }
+}
+
+###############################################################################
+# Обновление токенов (Refresh)
+###############################################################################
+
+### Обновление токенов с валидным refresh_token
+POST {{baseUrl}}/api/v1/tokens/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "{{refreshToken}}"
+}
+
+### Обновление токенов (пример с реальным токеном - замените на полученный)
+POST {{baseUrl}}/api/v1/tokens/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoicmVmcmVzaCIsInVzZXJfaWQiOiIxMjM0NSIsInVzZXJuYW1lIjoiam9obmRvZSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcwNTkzMjgwMCwiaWF0IjoxNzA1MzI0MDAwfQ.signature"
+}
+
+###############################################################################
+# Проксирование запросов
+# Запросы проксируются к целевым сервисам после валидации JWT токена
+# Домены должны быть настроены в configs/proxy.json
+###############################################################################
+
+### GET запрос к api.example.com (маршрут /v1/users/*)
+GET {{baseUrl}}/v1/users/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+
+### POST запрос к api.example.com (маршрут /v1/users/*)
+POST {{baseUrl}}/v1/users
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "username": "newuser",
+  "email": "newuser@example.com"
+}
+
+### GET запрос к api.example.com (маршрут /v1/orders/**)
+GET {{baseUrl}}/v1/orders/123/items
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+
+### POST запрос к api.example.com (маршрут /v1/orders/**)
+POST {{baseUrl}}/v1/orders
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "product_id": "456",
+  "quantity": 2,
+  "price": 99.99
+}
+
+### PUT запрос к api.example.com (маршрут /v1/orders/**)
+PUT {{baseUrl}}/v1/orders/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "status": "shipped"
+}
+
+### DELETE запрос к api.example.com (маршрут /v1/orders/**)
+DELETE {{baseUrl}}/v1/orders/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+
+### GET запрос к admin.example.com (маршрут /admin/*)
+GET {{baseUrl}}/admin/users
+Host: admin.example.com
+Authorization: Bearer {{accessToken}}
+
+### POST запрос к admin.example.com (маршрут /admin/*)
+POST {{baseUrl}}/admin/settings
+Host: admin.example.com
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "setting_key": "maintenance_mode",
+  "setting_value": "true"
+}
+
+### GET запрос к example.loc (маршрут *)
+GET {{baseUrl}}/any/path/here
+Host: example.loc
+Authorization: Bearer {{accessToken}}
+
+### POST запрос к example.loc (маршрут *)
+POST {{baseUrl}}/test/endpoint
+Host: example.loc
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "test": "data"
+}
+
+###############################################################################
+# Примеры ошибок
+###############################################################################
+
+### Ошибка 400: Некорректный формат запроса (отсутствует alg)
+POST {{baseUrl}}/api/v1/tokens/generate
+Content-Type: application/json
+
+{
+  "header": {
+    "typ": "JWT"
+  },
+  "payload": {
+    "user_id": "12345"
+  }
+}
+
+### Ошибка 400: Неподдерживаемый алгоритм
+POST {{baseUrl}}/api/v1/tokens/generate
+Content-Type: application/json
+
+{
+  "header": {
+    "alg": "HS512",
+    "typ": "JWT"
+  },
+  "payload": {
+    "user_id": "12345"
+  }
+}
+
+### Ошибка 400: Отсутствует refresh_token
+POST {{baseUrl}}/api/v1/tokens/refresh
+Content-Type: application/json
+
+{
+  "token": "invalid-field"
+}
+
+### Ошибка 401: Невалидный токен
+GET {{baseUrl}}/v1/users/123
+Host: api.example.com
+Authorization: Bearer invalid-token-here
+
+### Ошибка 401: Истекший токен
+GET {{baseUrl}}/v1/users/123
+Host: api.example.com
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjAwMDAwMDAwfQ.expired
+
+### Ошибка 400: Отсутствует Host header
+GET {{baseUrl}}/v1/users/123
+Authorization: Bearer {{accessToken}}
+
+### Ошибка 404: Домен не найден в конфигурации
+GET {{baseUrl}}/v1/users/123
+Host: unknown.example.com
+Authorization: Bearer {{accessToken}}
+
+### Ошибка 404: Маршрут не найден для домена
+GET {{baseUrl}}/v1/products/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# Примеры с различными HTTP методами
+###############################################################################
+
+### PATCH запрос
+PATCH {{baseUrl}}/v1/orders/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "status": "processing"
+}
+
+### HEAD запрос
+HEAD {{baseUrl}}/v1/users/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+
+### OPTIONS запрос
+OPTIONS {{baseUrl}}/v1/users
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+
+###############################################################################
+# Примеры с кастомными заголовками
+###############################################################################
+
+### Запрос с дополнительными заголовками
+GET {{baseUrl}}/v1/users/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+X-Request-ID: req-12345
+X-Client-Version: 1.0.0
+Accept: application/json
+
+### Запрос с X-Forwarded-For (для проверки IP whitelist)
+GET {{baseUrl}}/v1/users/123
+Host: api.example.com
+Authorization: Bearer {{accessToken}}
+X-Forwarded-For: 192.168.1.100
+
+###############################################################################
+# Примечания
+###############################################################################
+
+# 1. Замените {{accessToken}} и {{refreshToken}} на реальные токены,
+#    полученные из эндпоинта /api/v1/tokens/generate
+#
+# 2. Для локальной разработки используйте baseUrl = http://localhost:8080
+#    Для продакшена замените на соответствующий URL
+#
+# 3. Домены (Host header) должны быть настроены в configs/proxy.json
+#    В примерах используются: api.example.com, admin.example.com, example.loc
+#
+# 4. Поддерживаемые алгоритмы: HS256, RS256, RS512, ES256, EdDSA
+#
+# 5. Время жизни токенов настраивается в configs/app.json:
+#    - access_token: token.exp (в минутах)
+#    - refresh_token: token.refresh_exp (в минутах)
+#
+# 6. IP whitelist для эндпоинтов генерации/обновления токенов
+#    настраивается в configs/app.json (token.ip_whitelist)
+#
+# 7. IP whitelist/blacklist для проксирования настраивается
+#    в configs/proxy.json для каждого маршрута
+#
+# 8. Claims из JWT токена автоматически добавляются в заголовки
+#    запроса в формате X-JWT-<claim_name> (например, X-JWT-user_id)
+
