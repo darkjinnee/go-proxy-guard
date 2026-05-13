@@ -32,7 +32,6 @@ go-proxy-guard/
 │   └── logger/        # Логирование
 ├── pkg/jwt/           # Утилиты для работы с JWT
 ├── configs/           # Файлы конфигурации
-├── scripts/           # Скрипты сборки и деплоя
 ├── deployments/       # Docker конфигурации
 └── docs/              # Документация
 ```
@@ -57,8 +56,6 @@ go mod download
 
 ```bash
 make build
-# или
-./scripts/build.sh
 ```
 
 Бинарник будет создан в `bin/proxy-guard`.
@@ -109,11 +106,7 @@ KEYS_DIR=./keys \
 
 ```bash
 # Сборка и запуск всех сервисов
-./scripts/deploy.sh
-
-# Или вручную
-cd deployments
-docker-compose up -d
+docker compose -f compose.yml up -d --build
 ```
 
 #### Переменные окружения
@@ -129,8 +122,7 @@ docker-compose up -d
 #### Пример запуска с мастер-ключом
 
 ```bash
-cd deployments
-MASTER_KEY=$(openssl rand -base64 32) docker-compose up -d
+MASTER_KEY=$(openssl rand -base64 32) docker compose -f compose.yml up -d --build
 ```
 
 **Важно**: Сохраните мастер-ключ в безопасном месте! Без него невозможно расшифровать ключи при следующем запуске.
@@ -138,13 +130,13 @@ MASTER_KEY=$(openssl rand -base64 32) docker-compose up -d
 #### Просмотр логов
 
 ```bash
-docker-compose logs -f proxy-guard
+docker compose logs -f proxy
 ```
 
 #### Остановка
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ## Конфигурация

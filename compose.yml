@@ -1,0 +1,43 @@
+services:
+  redis:
+    env_file: .env
+    image: redis:alpine
+    container_name: proxy_guard_redis
+    volumes:
+      - ./docker/scripts/redis.sh:/scripts/redis.sh
+    environment:
+      PASSWORD: ${REDIS_PASSWORD}
+    command: /scripts/redis.sh
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  proxy:
+    env_file: .env
+    build:
+      context: .
+      dockerfile: ./docker/services/go/dev.Dockerfile
+    container_name: proxy_guard_go
+    ports:
+      - "${LISTEN_ADDR:-8080}:8080"
+    volumes:
+      - ./:/var/www/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/tokens/generate || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  default:
+    driver: bridge

@@ -50,4 +50,3 @@ ENV PROXY_CONFIG=/app/configs/proxy.json
 ENV KEYS_DIR=/var/lib/go-proxy-guard/keys
 
 CMD ["./proxy-guard"]
-
