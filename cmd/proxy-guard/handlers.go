@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -12,25 +13,50 @@ import (
 	"go-proxy-guard/internal/proxy"
 )
 
+var errRequestEntityTooLarge = errors.New("request entity too large")
+
+// readRequestBodyLimited читает r.Body целиком, если размер не превышает maxBodySizeMB.
+// При превышении возвращает errRequestEntityTooLarge и освобождает остаток тела.
+func readRequestBodyLimited(r *http.Request, maxBodySizeMB int) ([]byte, error) {
+	maxBytes := int64(maxBodySizeMB) * 1024 * 1024
+	body, err := io.ReadAll(io.LimitReader(r.Body, maxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(body)) > maxBytes {
+		_, _ = io.Copy(io.Discard, r.Body)
+		return nil, errRequestEntityTooLarge
+	}
+	return body, nil
+}
+
 // handleGenerateTokens обрабатывает запрос на генерацию токенов
-func handleGenerateTokens(authService *auth.Service, log logger.Logger) http.HandlerFunc {
+func handleGenerateTokens(
+	authService *auth.Service,
+	log logger.Logger,
+	cfg *config.AppConfig,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		defer r.Body.Close()
 
 		// Извлекаем IP клиента
 		clientIP := extractClientIP(r)
 
-		// Читаем тело запроса
-		body, err := io.ReadAll(r.Body)
+		body, err := readRequestBodyLimited(r, cfg.Proxy.MaxBodySizeMB)
+		if errors.Is(err, errRequestEntityTooLarge) {
+			log.Warn("Request body too large", logger.NewField("path", r.URL.Path))
+			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		if err != nil {
 			log.Error("Error reading request body", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
 
 		// Парсим JSON
 		var req auth.GenerateTokenRequest
@@ -57,24 +83,32 @@ func handleGenerateTokens(authService *auth.Service, log logger.Logger) http.Han
 }
 
 // handleRefreshTokens обрабатывает запрос на обновление токенов
-func handleRefreshTokens(authService *auth.Service, log logger.Logger) http.HandlerFunc {
+func handleRefreshTokens(
+	authService *auth.Service,
+	log logger.Logger,
+	cfg *config.AppConfig,
+) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
+		defer r.Body.Close()
 
 		// Извлекаем IP клиента
 		clientIP := extractClientIP(r)
 
-		// Читаем тело запроса
-		body, err := io.ReadAll(r.Body)
+		body, err := readRequestBodyLimited(r, cfg.Proxy.MaxBodySizeMB)
+		if errors.Is(err, errRequestEntityTooLarge) {
+			log.Warn("Request body too large", logger.NewField("path", r.URL.Path))
+			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		if err != nil {
 			log.Error("Error reading request body", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
 
 		// Парсим JSON
 		var req auth.RefreshTokenRequest
@@ -103,19 +137,17 @@ func handleRefreshTokens(authService *auth.Service, log logger.Logger) http.Hand
 // handleProxy обрабатывает проксирование запросов
 func handleProxy(proxyService *proxy.Service, log logger.Logger, cfg *config.AppConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Читаем тело запроса с ограничением размера
-		maxBodySize := int64(cfg.Proxy.MaxBodySizeMB) * 1024 * 1024
-		body, err := io.ReadAll(io.LimitReader(r.Body, maxBodySize))
+		defer r.Body.Close()
+
+		body, err := readRequestBodyLimited(r, cfg.Proxy.MaxBodySizeMB)
+		if errors.Is(err, errRequestEntityTooLarge) {
+			log.Warn("Request body too large", logger.NewField("path", r.URL.Path))
+			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		if err != nil {
 			log.Error("Error reading request body", logger.NewField("error", err.Error()))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		// Проверяем размер тела
-		if int64(len(body)) >= maxBodySize {
-			http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
 			return
 		}
 

@@ -97,8 +97,14 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Эндпоинты для работы с токенами
-	mux.HandleFunc("/api/v1/tokens/generate", handleGenerateTokens(authService, appLogger))
-	mux.HandleFunc("/api/v1/tokens/refresh", handleRefreshTokens(authService, appLogger))
+	mux.HandleFunc(
+		"/api/v1/tokens/generate",
+		handleGenerateTokens(authService, appLogger, cfg.App),
+	)
+	mux.HandleFunc(
+		"/api/v1/tokens/refresh",
+		handleRefreshTokens(authService, appLogger, cfg.App),
+	)
 
 	// Все остальные запросы идут в proxy
 	mux.HandleFunc("/", handleProxy(proxyService, appLogger, cfg.App))
