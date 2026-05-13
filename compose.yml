@@ -27,6 +27,8 @@ services:
       - "${LISTEN_ADDR:-8080}:8080"
     volumes:
       - ./:/var/www/app
+    environment:
+      VIRTUAL_HOST: example.loc
     depends_on:
       redis:
         condition: service_healthy

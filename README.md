@@ -32,7 +32,7 @@ go-proxy-guard/
 │   └── logger/        # Логирование
 ├── pkg/jwt/           # Утилиты для работы с JWT
 ├── configs/           # Файлы конфигурации
-├── deployments/       # Docker конфигурации
+├── docker/            # Docker конфигурации
 └── docs/              # Документация
 ```
 
@@ -59,12 +59,6 @@ make build
 ```
 
 Бинарник будет создан в `bin/proxy-guard`.
-
-#### Запуск Redis
-
-```bash
-docker run -d --name redis -p 6379:6379 redis:7-alpine
-```
 
 #### Конфигурация
 
@@ -119,14 +113,6 @@ docker compose -f compose.yml up -d --build
 - `PROXY_CONFIG` — путь к файлу proxy.json (по умолчанию `/app/configs/proxy.json`)
 - `KEYS_DIR` — директория для хранения ключей (по умолчанию `/var/lib/go-proxy-guard/keys`)
 
-#### Пример запуска с мастер-ключом
-
-```bash
-MASTER_KEY=$(openssl rand -base64 32) docker compose -f compose.yml up -d --build
-```
-
-**Важно**: Сохраните мастер-ключ в безопасном месте! Без него невозможно расшифровать ключи при следующем запуске.
-
 #### Просмотр логов
 
 ```bash
@@ -157,8 +143,6 @@ docker compose down
 - `proxy` — глобальные настройки проксирования
 - `domains` — маршрутизация по доменам с правилами для путей
   - Для каждого домена можно указать `label` (опционально) для проверки соответствия `kid` из заголовка JWT токена
-
-Подробнее см. [docs/TZ.md](docs/TZ.md).
 
 ## API эндпоинты
 

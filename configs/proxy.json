@@ -62,7 +62,7 @@
             "method": ["*"]
           },
           "forward_to": {
-            "url": "https://test999.free.beeceptor.com",
+            "url": "https://qwer-api.free.beeceptor.com",
             "add_headers": {
               "X-Admin": "true"
             }
