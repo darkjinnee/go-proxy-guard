@@ -10,23 +10,22 @@ func TestLoadProxyConfig(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, "proxy.json")
 
-	configContent := `{
-		"domains": {
-			"api.example.com": {
-				"routes": [
-					{
-						"match": {
-							"path": "/v1/users/*",
-							"method": ["GET", "POST"]
-						},
-						"forward_to": {
-							"url": "http://users-service.internal:8080"
-						}
+	configContent := `[
+		{
+			"domain": "api.example.com",
+			"routes": [
+				{
+					"match": {
+						"path": "/v1/users/*",
+						"method": ["GET", "POST"]
+					},
+					"forward_to": {
+						"url": "http://users-service.internal:8080"
 					}
-				]
-			}
+				}
+			]
 		}
-	}`
+	]`
 
 	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
 		t.Fatalf("Ошибка создания тестового файла: %v", err)

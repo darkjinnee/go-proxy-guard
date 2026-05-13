@@ -7,9 +7,16 @@ import (
 	"strings"
 )
 
-// ProxyRoutingConfig представляет конфигурацию маршрутизации прокси
+// ProxyRoutingConfig представляет конфигурацию маршрутизации прокси.
+// В JSON-файле корень — массив domainEntry; после загрузки строится карта Domains.
 type ProxyRoutingConfig struct {
-	Domains map[string]DomainConfig `json:"domains"`
+	Domains map[string]DomainConfig `json:"-"`
+}
+
+// domainEntry описывает один элемент массива в proxy.json.
+type domainEntry struct {
+	Domain string `json:"domain"`
+	DomainConfig
 }
 
 // DomainConfig представляет конфигурацию маршрутов для домена
@@ -49,16 +56,36 @@ func LoadProxyConfig(path string) (*ProxyRoutingConfig, error) {
 		return nil, fmt.Errorf("error reading config file: %w", err)
 	}
 
-	var cfg ProxyRoutingConfig
-	if err := json.Unmarshal(data, &cfg); err != nil {
+	var entries []domainEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
 		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
 
+	if len(entries) == 0 {
+		return nil, fmt.Errorf("proxy config must contain at least one domain entry")
+	}
+
+	domains := make(map[string]DomainConfig, len(entries))
+	for i, e := range entries {
+		d := normalizeDomain(e.Domain)
+		if d == "" {
+			return nil, fmt.Errorf("domain entry[%d]: domain cannot be empty", i)
+		}
+		if _, dup := domains[d]; dup {
+			return nil, fmt.Errorf("duplicate domain %q", d)
+		}
+		domains[d] = DomainConfig{
+			Label:  e.Label,
+			Routes: e.Routes,
+		}
+	}
+
+	cfg := &ProxyRoutingConfig{Domains: domains}
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
 
 // Validate проверяет корректность конфигурации маршрутизации

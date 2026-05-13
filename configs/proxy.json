@@ -1,67 +1,68 @@
-{
-  "domains": {
-    "api.example.com": {
-      "label": "api-key-label",
-      "routes": [
-        {
-          "match": {
-            "path": "/v1/users/*",
-            "method": ["GET", "POST"],
-            "ip_whitelist": ["10.0.0.0/24", "192.168.1.0/24"]
-          },
-          "forward_to": {
-            "url": "http://users-service.internal:8080",
-            "add_headers": {
-              "X-Service-Name": "users"
-            }
-          }
+[
+  {
+    "domain": "api.example.com",
+    "label": "api-key-label",
+    "routes": [
+      {
+        "match": {
+          "path": "/v1/users/*",
+          "method": ["GET", "POST"],
+          "ip_whitelist": ["10.0.0.0/24", "192.168.1.0/24"]
         },
-        {
-          "match": {
-            "path": "/v1/orders/**",
-            "method": ["*"]
-          },
-          "forward_to": {
-            "url": "http://orders.internal:9000",
-            "add_headers": {
-              "X-Service-Name": "orders"
-            }
+        "forward_to": {
+          "url": "http://users-service.internal:8080",
+          "add_headers": {
+            "X-Service-Name": "users"
           }
         }
-      ]
-    },
-    "admin.example.com": {
-      "routes": [
-        {
-          "match": {
-            "path": "/admin/*",
-            "method": ["*"]
-          },
-          "forward_to": {
-            "url": "http://admin.internal:7000",
-            "add_headers": {
-              "X-Admin": "true"
-            }
+      },
+      {
+        "match": {
+          "path": "/v1/orders/**",
+          "method": ["*"]
+        },
+        "forward_to": {
+          "url": "http://orders.internal:9000",
+          "add_headers": {
+            "X-Service-Name": "orders"
           }
         }
-      ]
-    },
-    "example.loc": {
-      "label": "api-key-label",
-      "routes": [
-        {
-          "match": {
-            "path": "*",
-            "method": ["*"]
-          },
-          "forward_to": {
-            "url": "https://qwer-api.free.beeceptor.com",
-            "add_headers": {
-              "X-Admin": "true"
-            }
+      }
+    ]
+  },
+  {
+    "domain": "admin.example.com",
+    "routes": [
+      {
+        "match": {
+          "path": "/admin/*",
+          "method": ["*"]
+        },
+        "forward_to": {
+          "url": "http://admin.internal:7000",
+          "add_headers": {
+            "X-Admin": "true"
           }
         }
-      ]
-    }
+      }
+    ]
+  },
+  {
+    "domain": "example.loc",
+    "label": "api-key-label",
+    "routes": [
+      {
+        "match": {
+          "path": "*",
+          "method": ["*"]
+        },
+        "forward_to": {
+          "url": "https://qazqaz.free.beeceptor.com",
+          "add_headers": {
+            "X-Admin": "true"
+          }
+        }
+      }
+    ]
   }
-}
+]
