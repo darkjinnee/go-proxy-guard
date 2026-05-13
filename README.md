@@ -109,6 +109,7 @@ docker compose -f compose.yml up -d --build
 
 - `MASTER_KEY` — мастер-ключ для шифрования ключей (ОБЯЗАТЕЛЬНО в продакшене!)
 - `LISTEN_ADDR` — адрес для прослушивания (по умолчанию `:8080`)
+- `HTTP_PORT` — порт в URL [healthcheck](https://docs.docker.com/reference/compose-file/services/#healthcheck) в `compose.yml` (по умолчанию `8080`). Подставляется при `docker compose` из `.env` или окружения shell; должен совпадать с портом в `LISTEN_ADDR` (например `:8080` → `8080`), иначе контейнер будет помечаться как unhealthy.
 - `APP_CONFIG` — путь к файлу app.json (по умолчанию `/app/configs/app.json`)
 - `PROXY_CONFIG` — путь к файлу proxy.json (по умолчанию `/app/configs/proxy.json`)
 - `KEYS_DIR` — директория для хранения ключей (по умолчанию `/var/lib/go-proxy-guard/keys`)
@@ -144,6 +145,18 @@ docker compose down
   - Для каждого домена можно указать `label` (опционально) для проверки соответствия `kid` из заголовка JWT токена
 
 ## API эндпоинты
+
+### Проверка работоспособности (liveness)
+
+```bash
+GET /health
+# или
+HEAD /health
+```
+
+Ответ **`200 OK`** без тела. Не зависит от Redis и подходит для проверок вроде `wget --spider` (GET/HEAD), в отличие от `/api/v1/tokens/generate`, который принимает только **POST**.
+
+В Docker (`compose.yml`) healthcheck сервиса `proxy` обращается к `http://localhost:${HTTP_PORT:-8080}/health`.
 
 ### Генерация токенов
 

@@ -96,6 +96,18 @@ func main() {
 	// Настраиваем маршрутизацию
 	mux := http.NewServeMux()
 
+	mux.HandleFunc(
+		"/health",
+		func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet, http.MethodHead:
+				w.WriteHeader(http.StatusOK)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		},
+	)
+
 	// Эндпоинты для работы с токенами
 	mux.HandleFunc(
 		"/api/v1/tokens/generate",
