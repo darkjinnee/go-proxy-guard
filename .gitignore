@@ -1,6 +1,6 @@
 # Binaries
+air/
 bin/
-tmp/
 *.exe
 *.exe~
 *.dll

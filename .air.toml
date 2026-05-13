@@ -1,12 +1,12 @@
 root = "."
-tmp_dir = "tmp"
+tmp_dir = "air"
 
 [build]
-cmd = "go build -o ./tmp/proxy-guard ./cmd/proxy-guard"
-bin = "./tmp/proxy-guard"
-full_bin = "./tmp/proxy-guard"
+cmd = "go build -o ./air/proxy-guard ./cmd/proxy-guard"
+bin = "./air/proxy-guard"
+full_bin = "./air/proxy-guard"
 include_ext = ["go", "tpl", "tmpl", "html", "json", "yaml", "yml"]
-exclude_dir = ["tmp", "bin", "vendor", ".git", ".idea", ".vscode"]
+exclude_dir = ["air", "bin", "vendor", ".git", ".idea", ".vscode"]
 exclude_file = []
 exclude_regex = ["_test\\.go"]
 exclude_unchanged = true
