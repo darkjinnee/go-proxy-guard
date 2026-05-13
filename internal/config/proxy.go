@@ -9,15 +9,7 @@ import (
 
 // ProxyRoutingConfig представляет конфигурацию маршрутизации прокси
 type ProxyRoutingConfig struct {
-	Proxy   ProxyRoutingProxyConfig `json:"proxy"`
 	Domains map[string]DomainConfig `json:"domains"`
-}
-
-// ProxyRoutingProxyConfig представляет глобальные настройки проксирования в proxy.json
-type ProxyRoutingProxyConfig struct {
-	TimeoutMS      int               `json:"timeout_ms"`
-	MaxBodySizeMB  int               `json:"max_body_size_mb"`
-	DefaultHeaders map[string]string `json:"default_headers,omitempty"`
 }
 
 // DomainConfig представляет конфигурацию маршрутов для домена
@@ -71,10 +63,6 @@ func LoadProxyConfig(path string) (*ProxyRoutingConfig, error) {
 
 // Validate проверяет корректность конфигурации маршрутизации
 func (c *ProxyRoutingConfig) Validate() error {
-	if err := c.Proxy.Validate(); err != nil {
-		return fmt.Errorf("proxy: %w", err)
-	}
-
 	if len(c.Domains) == 0 {
 		return fmt.Errorf("domains cannot be empty")
 	}
@@ -83,19 +71,6 @@ func (c *ProxyRoutingConfig) Validate() error {
 		if err := domainCfg.Validate(); err != nil {
 			return fmt.Errorf("domain %s: %w", domain, err)
 		}
-	}
-
-	return nil
-}
-
-// Validate проверяет корректность глобальных настроек проксирования
-func (c *ProxyRoutingProxyConfig) Validate() error {
-	if c.TimeoutMS <= 0 {
-		return fmt.Errorf("timeout_ms must be greater than 0")
-	}
-
-	if c.MaxBodySizeMB <= 0 {
-		return fmt.Errorf("max_body_size_mb must be greater than 0")
 	}
 
 	return nil

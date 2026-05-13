@@ -11,10 +11,6 @@ func TestLoadProxyConfig(t *testing.T) {
 	configPath := filepath.Join(tmpDir, "proxy.json")
 
 	configContent := `{
-		"proxy": {
-			"timeout_ms": 5000,
-			"max_body_size_mb": 10
-		},
 		"domains": {
 			"api.example.com": {
 				"routes": [
@@ -124,10 +120,6 @@ func TestProxyRoutingConfig_Validate(t *testing.T) {
 		{
 			name: "валидная конфигурация",
 			config: ProxyRoutingConfig{
-				Proxy: ProxyRoutingProxyConfig{
-					TimeoutMS:     5000,
-					MaxBodySizeMB: 10,
-				},
 				Domains: map[string]DomainConfig{
 					"api.example.com": {
 						Routes: []Route{
@@ -149,21 +141,13 @@ func TestProxyRoutingConfig_Validate(t *testing.T) {
 		{
 			name: "пустые domains",
 			config: ProxyRoutingConfig{
-				Proxy: ProxyRoutingProxyConfig{
-					TimeoutMS:     5000,
-					MaxBodySizeMB: 10,
-				},
 				Domains: map[string]DomainConfig{},
 			},
 			wantErr: true,
 		},
 		{
-			name: "невалидный timeout_ms",
+			name: "пустые routes у домена",
 			config: ProxyRoutingConfig{
-				Proxy: ProxyRoutingProxyConfig{
-					TimeoutMS:     0,
-					MaxBodySizeMB: 10,
-				},
 				Domains: map[string]DomainConfig{
 					"test.com": {
 						Routes: []Route{},

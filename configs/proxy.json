@@ -1,11 +1,4 @@
 {
-  "proxy": {
-    "timeout_ms": 5000,
-    "max_body_size_mb": 10,
-    "default_headers": {
-      "X-Powered-By": "Go-Proxy-Guard"
-    }
-  },
   "domains": {
     "api.example.com": {
       "label": "api-key-label",
@@ -72,4 +65,3 @@
     }
   }
 }
-
