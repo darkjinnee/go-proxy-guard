@@ -8,7 +8,7 @@ REST API сервис для аутентификации и авторизац�
 
 ## Основные возможности
 
-- Генерация пары JWT токенов (access_token и refresh_token) с поддержкой различных алгоритмов подписи (HS256, RS256, RS512, ES256, EdDSA)
+- Генерация пары JWT токенов (access_token и refresh_token) с поддержкой алгоритмов подписи: HS256, HS512, RS256, RS512, ES256, ES512, EdDSA
 - Обновление токенов на основе валидного refresh_token
 - Защита от повторного использования refresh токенов через Redis
 - Валидация JWT токенов перед проксированием запросов
@@ -75,6 +75,7 @@ REDIS_PORT=6379
 KEYS_DIR=./keys
 LOGGING_LEVEL=debug
 MASTER_KEY=your-master-key-here
+# TOKEN_ALG_SUPPORTED=HS256,HS512,RS256,RS512,ES256,ES512,EdDSA
 ```
 
 #### Запуск
@@ -113,6 +114,7 @@ docker compose -f compose.yml up -d --build
 - `APP_CONFIG` — путь к файлу app.json (по умолчанию `/app/configs/app.json`)
 - `PROXY_CONFIG` — путь к файлу proxy.json (по умолчанию `/app/configs/proxy.json`)
 - `KEYS_DIR` — директория для хранения ключей (по умолчанию `/var/lib/go-proxy-guard/keys`)
+- `TOKEN_ALG_SUPPORTED` — (опционально) переопределение списка алгоритмов через запятую, например `HS256,RS256,ES256`
 
 #### Просмотр логов
 
@@ -133,9 +135,26 @@ docker compose down
 Глобальные настройки приложения:
 
 - `proxy` — настройки проксирования (таймауты, размер тела запроса)
-- `token` — настройки JWT токенов (время жизни, алгоритмы, IP whitelist)
+- `token` — настройки JWT токенов (время жизни, `alg_supported`, `typ_supported`, IP whitelist и др.)
 - `redis` — настройки подключения к Redis
 - `logging` — настройки логирования (уровень, формат, ротация)
+- `keys` — каталог файлового хранилища ключей (`dir`)
+
+Список разрешённых алгоритмов задаётся в `token.alg_supported` (JSON-массив строк) или переменной окружения **`TOKEN_ALG_SUPPORTED`** (те же значения через запятую, пробелы у элементов обрезаются). При старте для каждого указанного алгоритма создаётся ключ на диске, если его ещё нет.
+
+Поддерживаемые значения `alg` / `alg_supported` (полный набор):
+
+| Значение | JWT | Файлы в `keys.dir` (префикс + UUID) |
+|----------|-----|-------------------------------------|
+| `HS256` | HMAC-SHA256 | `hs256_<id>.key` |
+| `HS512` | HMAC-SHA512 | `hs512_<id>.key` |
+| `RS256` | RSA + SHA-256 (2048 бит) | `rsa256_<id>.private`, `rsa256_<id>.public` |
+| `RS512` | RSA + SHA-512 (4096 бит) | `rsa512_<id>.private`, `rsa512_<id>.public` |
+| `ES256` | ECDSA P-256 + SHA-256 | `es256_<id>.private`, `es256_<id>.public` |
+| `ES512` | ECDSA P-521 + SHA-512 | `es512_<id>.private`, `es512_<id>.public` |
+| `EdDSA` | Ed25519 | `eddsa_<id>.private`, `eddsa_<id>.public` |
+
+Секреты на диске шифруются мастер-ключом (`MASTER_KEY` или `master.key` в каталоге ключей).
 
 ### proxy.json
 
@@ -203,7 +222,7 @@ Content-Type: application/json
 ```
 
 **Параметры запроса**:
-- `header.alg` (required): Алгоритм подписи токена (HS256, RS256, RS512, ES256, EdDSA)
+- `header.alg` (required): Алгоритм подписи токена — одно из значений из `token.alg_supported` / `TOKEN_ALG_SUPPORTED` (см. таблицу выше: HS256, HS512, RS256, RS512, ES256, ES512, EdDSA)
 - `header.typ` (required): Тип токена (JWT)
 - `header.kid` (optional): Key ID для идентификации ключа в заголовке токена. Если не указан, используется ID ключа из хранилища
 - `payload.*` (required): Claims токена (данные пользователя)

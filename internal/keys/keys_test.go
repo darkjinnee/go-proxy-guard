@@ -9,9 +9,11 @@ import (
 func TestGenerateKey(t *testing.T) {
 	algorithms := []Algorithm{
 		AlgorithmHS256,
+		AlgorithmHS512,
 		AlgorithmRS256,
 		AlgorithmRS512,
 		AlgorithmES256,
+		AlgorithmES512,
 		AlgorithmEdDSA,
 	}
 
@@ -37,10 +39,14 @@ func TestGenerateKey(t *testing.T) {
 			// Проверяем наличие ключа в зависимости от алгоритма
 			switch alg {
 			case AlgorithmHS256:
-				if key.HMAC == nil || len(key.HMAC) == 0 {
-					t.Error("HMAC ключ не сгенерирован")
+				if key.HMAC == nil || len(key.HMAC) != 32 {
+					t.Errorf("HMAC ключ HS256: ожидалось 32 байта, len=%d", len(key.HMAC))
 				}
-			case AlgorithmRS256, AlgorithmRS512, AlgorithmES256, AlgorithmEdDSA:
+			case AlgorithmHS512:
+				if key.HMAC == nil || len(key.HMAC) != 64 {
+					t.Errorf("HMAC ключ HS512: ожидалось 64 байта, len=%d", len(key.HMAC))
+				}
+			case AlgorithmRS256, AlgorithmRS512, AlgorithmES256, AlgorithmES512, AlgorithmEdDSA:
 				if key.KeyPair == nil {
 					t.Error("Пара ключей не сгенерирована")
 				}
@@ -115,7 +121,7 @@ func TestFileStore_RegenerateKey(t *testing.T) {
 	}
 
 	// Проверяем, что создана резервная копия
-	backupPath := filepath.Join(tmpDir, "hmac_"+key1.Metadata.ID+".key.backup")
+	backupPath := filepath.Join(tmpDir, "hs256_"+key1.Metadata.ID+".key.backup")
 	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
 		t.Error("Резервная копия не создана")
 	}
@@ -159,7 +165,7 @@ func TestInitializeKeys(t *testing.T) {
 		t.Fatalf("Ошибка создания хранилища: %v", err)
 	}
 
-	algorithms := []string{"HS256", "RS256", "RS512", "ES256"}
+	algorithms := []string{"HS256", "HS512", "RS256", "RS512", "ES256", "ES512"}
 
 	// Инициализируем ключи
 	if err := store.InitializeKeys(algorithms); err != nil {
@@ -177,14 +183,19 @@ func TestInitializeKeys(t *testing.T) {
 		}
 	}
 
-	rs256ID, err := store.GetKey(AlgorithmRS256)
-	if err != nil {
-		t.Fatalf("RS256: %v", err)
+	snapshot := func(st *FileStore) map[string]string {
+		m := make(map[string]string)
+		for _, a := range algorithms {
+			k, err := st.GetKey(Algorithm(a))
+			if err != nil {
+				t.Fatalf("%s: %v", a, err)
+			}
+			m[a] = k.Metadata.ID
+		}
+		return m
 	}
-	rs512ID, err := store.GetKey(AlgorithmRS512)
-	if err != nil {
-		t.Fatalf("RS512: %v", err)
-	}
+
+	before := snapshot(store)
 
 	store2, err := NewFileStore(tmpDir)
 	if err != nil {
@@ -193,20 +204,12 @@ func TestInitializeKeys(t *testing.T) {
 	if err := store2.InitializeKeys(algorithms); err != nil {
 		t.Fatalf("повторная инициализация: %v", err)
 	}
-	rs256Again, err := store2.GetKey(AlgorithmRS256)
-	if err != nil {
-		t.Fatalf("RS256 после reload: %v", err)
-	}
-	rs512Again, err := store2.GetKey(AlgorithmRS512)
-	if err != nil {
-		t.Fatalf("RS512 после reload: %v", err)
-	}
-	if rs256Again.Metadata.ID != rs256ID.Metadata.ID {
-		t.Errorf("RS256: ожидался тот же key ID, было %s стало %s",
-			rs256ID.Metadata.ID, rs256Again.Metadata.ID)
-	}
-	if rs512Again.Metadata.ID != rs512ID.Metadata.ID {
-		t.Errorf("RS512: ожидался тот же key ID, было %s стало %s",
-			rs512ID.Metadata.ID, rs512Again.Metadata.ID)
+	after := snapshot(store2)
+
+	for _, a := range algorithms {
+		if after[a] != before[a] {
+			t.Errorf("%s: после reload ожидался тот же key ID, было %s стало %s",
+				a, before[a], after[a])
+		}
 	}
 }

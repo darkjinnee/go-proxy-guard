@@ -2,18 +2,20 @@ package keys
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
 	"time"
 )
 
-// generateHMACKey генерирует ключ для HMAC (HS256)
-func generateHMACKey() ([]byte, error) {
-	// Генерируем 256-битный ключ (32 байта)
-	key := make([]byte, 32)
+// generateHMACKey генерирует случайный секрет заданной длины (байты), например 32 для HS256, 64 для HS512.
+func generateHMACKey(secretBytes int) ([]byte, error) {
+	if secretBytes <= 0 {
+		return nil, fmt.Errorf("длина секрета HMAC должна быть больше 0")
+	}
+	key := make([]byte, secretBytes)
 	if _, err := rand.Read(key); err != nil {
 		return nil, fmt.Errorf("ошибка генерации HMAC ключа: %w", err)
 	}
@@ -33,10 +35,9 @@ func generateRSAKey(bits int) (*KeyPair, error) {
 	}, nil
 }
 
-// generateECDSAKey генерирует пару ключей ECDSA
-func generateECDSAKey() (*KeyPair, error) {
-	// Используем кривую P-256 для ES256
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+// generateECDSAKey генерирует пару ECDSA на указанной кривой (например elliptic.P256() для ES256, elliptic.P521() для ES512).
+func generateECDSAKey(curve elliptic.Curve) (*KeyPair, error) {
+	privateKey, err := ecdsa.GenerateKey(curve, rand.Reader)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка генерации ECDSA ключа: %w", err)
 	}
@@ -74,7 +75,14 @@ func GenerateKey(algorithm Algorithm) (*Key, error) {
 
 	switch algorithm {
 	case AlgorithmHS256:
-		hmacKey, err := generateHMACKey()
+		hmacKey, err := generateHMACKey(32)
+		if err != nil {
+			return nil, err
+		}
+		key.HMAC = hmacKey
+
+	case AlgorithmHS512:
+		hmacKey, err := generateHMACKey(64)
 		if err != nil {
 			return nil, err
 		}
@@ -95,7 +103,14 @@ func GenerateKey(algorithm Algorithm) (*Key, error) {
 		key.KeyPair = keyPair
 
 	case AlgorithmES256:
-		keyPair, err := generateECDSAKey()
+		keyPair, err := generateECDSAKey(elliptic.P256())
+		if err != nil {
+			return nil, err
+		}
+		key.KeyPair = keyPair
+
+	case AlgorithmES512:
+		keyPair, err := generateECDSAKey(elliptic.P521())
 		if err != nil {
 			return nil, err
 		}
@@ -114,4 +129,3 @@ func GenerateKey(algorithm Algorithm) (*Key, error) {
 
 	return &key, nil
 }
-

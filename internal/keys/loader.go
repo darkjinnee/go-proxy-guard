@@ -37,15 +37,12 @@ func (s *FileStore) loadKeys() error {
 
 		// Парсим имя файла для извлечения ID
 		var keyID string
-		if strings.HasPrefix(name, "hmac_") && strings.HasSuffix(name, ".key") {
-			keyID = strings.TrimPrefix(strings.TrimSuffix(name, ".key"), "hmac_")
+		if _, kid, ok := parseHSKeyFilename(name); ok {
+			keyID = kid
 		} else if _, kid, ok := parseRSAKeyFilename(name); ok {
 			keyID = kid
-		} else if strings.HasPrefix(name, "ecdsa_") {
-			parts := strings.Split(strings.TrimSuffix(strings.TrimSuffix(name, ".private"), ".public"), "_")
-			if len(parts) == 2 {
-				keyID = parts[1]
-			}
+		} else if _, kid, ok := parseESKeyFilename(name); ok {
+			keyID = kid
 		} else if strings.HasPrefix(name, "eddsa_") {
 			parts := strings.Split(strings.TrimSuffix(strings.TrimSuffix(name, ".private"), ".public"), "_")
 			if len(parts) == 2 {
@@ -68,12 +65,12 @@ func (s *FileStore) loadKeys() error {
 		// Определяем алгоритм по первому файлу
 		var algorithm Algorithm
 		firstFile := files[0]
-		if strings.HasPrefix(firstFile, "hmac_") {
-			algorithm = AlgorithmHS256
+		if alg, _, ok := parseHSKeyFilename(firstFile); ok {
+			algorithm = alg
 		} else if alg, _, ok := parseRSAKeyFilename(firstFile); ok {
 			algorithm = alg
-		} else if strings.HasPrefix(firstFile, "ecdsa_") {
-			algorithm = AlgorithmES256
+		} else if alg, _, ok := parseESKeyFilename(firstFile); ok {
+			algorithm = alg
 		} else if strings.HasPrefix(firstFile, "eddsa_") {
 			algorithm = AlgorithmEdDSA
 		} else {
@@ -107,8 +104,8 @@ func (s *FileStore) loadKey(keyID string, algorithm Algorithm) (*Key, error) {
 	}
 
 	switch algorithm {
-	case AlgorithmHS256:
-		hmacKey, err := s.loadHMACKey(keyID)
+	case AlgorithmHS256, AlgorithmHS512:
+		hmacKey, err := s.loadHMACKey(keyID, algorithm)
 		if err != nil {
 			return nil, err
 		}
@@ -121,8 +118,8 @@ func (s *FileStore) loadKey(keyID string, algorithm Algorithm) (*Key, error) {
 		}
 		key.KeyPair = keyPair
 
-	case AlgorithmES256:
-		keyPair, err := s.loadECDSAKey(keyID)
+	case AlgorithmES256, AlgorithmES512:
+		keyPair, err := s.loadECDSAKey(keyID, algorithm)
 		if err != nil {
 			return nil, err
 		}
@@ -142,9 +139,14 @@ func (s *FileStore) loadKey(keyID string, algorithm Algorithm) (*Key, error) {
 	return key, nil
 }
 
-// loadHMACKey загружает HMAC ключ
-func (s *FileStore) loadHMACKey(keyID string) ([]byte, error) {
-	filename := fmt.Sprintf("hmac_%s.key", keyID)
+// loadHMACKey загружает HMAC ключ (hs256_<id>.key или hs512_<id>.key).
+func (s *FileStore) loadHMACKey(keyID string, algorithm Algorithm) ([]byte, error) {
+	prefix, err := hsNamePrefix(algorithm)
+	if err != nil {
+		return nil, err
+	}
+
+	filename := fmt.Sprintf("%s%s.key", prefix, keyID)
 	path := filepath.Join(s.keysDir, filename)
 
 	data, err := os.ReadFile(path)
@@ -205,9 +207,14 @@ func (s *FileStore) loadRSAKey(keyID string, algorithm Algorithm) (*KeyPair, err
 	}, nil
 }
 
-// loadECDSAKey загружает ECDSA ключ
-func (s *FileStore) loadECDSAKey(keyID string) (*KeyPair, error) {
-	privateFilename := fmt.Sprintf("ecdsa_%s.private", keyID)
+// loadECDSAKey загружает ECDSA ключ (es256_<id>.* или es512_<id>.*).
+func (s *FileStore) loadECDSAKey(keyID string, algorithm Algorithm) (*KeyPair, error) {
+	prefix, err := esNamePrefix(algorithm)
+	if err != nil {
+		return nil, err
+	}
+
+	privateFilename := fmt.Sprintf("%s%s.private", prefix, keyID)
 	privatePath := filepath.Join(s.keysDir, privateFilename)
 
 	encryptedPrivate, err := os.ReadFile(privatePath)

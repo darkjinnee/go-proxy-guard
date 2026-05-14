@@ -15,11 +15,11 @@ import (
 // saveKey сохраняет ключ в файл с шифрованием
 func (s *FileStore) saveKey(key *Key) error {
 	switch key.Metadata.Algorithm {
-	case AlgorithmHS256:
+	case AlgorithmHS256, AlgorithmHS512:
 		return s.saveHMACKey(key)
 	case AlgorithmRS256, AlgorithmRS512:
 		return s.saveRSAKey(key)
-	case AlgorithmES256:
+	case AlgorithmES256, AlgorithmES512:
 		return s.saveECDSAKey(key)
 	case AlgorithmEdDSA:
 		return s.saveEdDSAKey(key)
@@ -39,8 +39,12 @@ func (s *FileStore) saveHMACKey(key *Key) error {
 	// Кодируем в base64
 	encoded := base64.StdEncoding.EncodeToString(encrypted)
 
-	// Сохраняем в файл
-	filename := fmt.Sprintf("hmac_%s.key", key.Metadata.ID)
+	prefix, err := hsNamePrefix(key.Metadata.Algorithm)
+	if err != nil {
+		return err
+	}
+
+	filename := fmt.Sprintf("%s%s.key", prefix, key.Metadata.ID)
 	path := filepath.Join(s.keysDir, filename)
 
 	if err := os.WriteFile(path, []byte(encoded), 0600); err != nil {
@@ -131,7 +135,12 @@ func (s *FileStore) saveECDSAKey(key *Key) error {
 		return fmt.Errorf("ошибка шифрования приватного ключа: %w", err)
 	}
 
-	privateFilename := fmt.Sprintf("ecdsa_%s.private", key.Metadata.ID)
+	prefix, err := esNamePrefix(key.Metadata.Algorithm)
+	if err != nil {
+		return err
+	}
+
+	privateFilename := fmt.Sprintf("%s%s.private", prefix, key.Metadata.ID)
 	privatePath := filepath.Join(s.keysDir, privateFilename)
 	if err := os.WriteFile(privatePath, encryptedPrivate, 0600); err != nil {
 		return fmt.Errorf("ошибка записи приватного ключа: %w", err)
@@ -154,7 +163,7 @@ func (s *FileStore) saveECDSAKey(key *Key) error {
 		return fmt.Errorf("ошибка шифрования публичного ключа: %w", err)
 	}
 
-	publicFilename := fmt.Sprintf("ecdsa_%s.public", key.Metadata.ID)
+	publicFilename := fmt.Sprintf("%s%s.public", prefix, key.Metadata.ID)
 	publicPath := filepath.Join(s.keysDir, publicFilename)
 	if err := os.WriteFile(publicPath, encryptedPublic, 0600); err != nil {
 		return fmt.Errorf("ошибка записи публичного ключа: %w", err)
@@ -220,8 +229,12 @@ func (s *FileStore) backupKey(key *Key) error {
 	var files []string
 
 	switch key.Metadata.Algorithm {
-	case AlgorithmHS256:
-		files = []string{fmt.Sprintf("hmac_%s.key", key.Metadata.ID)}
+	case AlgorithmHS256, AlgorithmHS512:
+		prefix, err := hsNamePrefix(key.Metadata.Algorithm)
+		if err != nil {
+			return err
+		}
+		files = []string{fmt.Sprintf("%s%s.key", prefix, key.Metadata.ID)}
 	case AlgorithmRS256, AlgorithmRS512:
 		prefix, err := rsaNamePrefix(key.Metadata.Algorithm)
 		if err != nil {
@@ -231,10 +244,14 @@ func (s *FileStore) backupKey(key *Key) error {
 			fmt.Sprintf("%s%s.private", prefix, key.Metadata.ID),
 			fmt.Sprintf("%s%s.public", prefix, key.Metadata.ID),
 		}
-	case AlgorithmES256:
+	case AlgorithmES256, AlgorithmES512:
+		prefix, err := esNamePrefix(key.Metadata.Algorithm)
+		if err != nil {
+			return err
+		}
 		files = []string{
-			fmt.Sprintf("ecdsa_%s.private", key.Metadata.ID),
-			fmt.Sprintf("ecdsa_%s.public", key.Metadata.ID),
+			fmt.Sprintf("%s%s.private", prefix, key.Metadata.ID),
+			fmt.Sprintf("%s%s.public", prefix, key.Metadata.ID),
 		}
 	case AlgorithmEdDSA:
 		files = []string{

@@ -88,12 +88,16 @@ func (v *validator) getSigningMethod(algorithm keys.Algorithm) jwt.SigningMethod
 	switch algorithm {
 	case keys.AlgorithmHS256:
 		return jwt.SigningMethodHS256
+	case keys.AlgorithmHS512:
+		return jwt.SigningMethodHS512
 	case keys.AlgorithmRS256:
 		return jwt.SigningMethodRS256
 	case keys.AlgorithmRS512:
 		return jwt.SigningMethodRS512
 	case keys.AlgorithmES256:
 		return jwt.SigningMethodES256
+	case keys.AlgorithmES512:
+		return jwt.SigningMethodES512
 	case keys.AlgorithmEdDSA:
 		return jwt.SigningMethodEdDSA
 	default:
@@ -104,7 +108,7 @@ func (v *validator) getSigningMethod(algorithm keys.Algorithm) jwt.SigningMethod
 // getVerificationKey возвращает ключ для проверки подписи
 func (v *validator) getVerificationKey(key *keys.Key, algorithm keys.Algorithm) (interface{}, error) {
 	switch algorithm {
-	case keys.AlgorithmHS256:
+	case keys.AlgorithmHS256, keys.AlgorithmHS512:
 		if key.HMAC == nil {
 			return nil, fmt.Errorf("HMAC key not found")
 		}
@@ -120,7 +124,7 @@ func (v *validator) getVerificationKey(key *keys.Key, algorithm keys.Algorithm) 
 		}
 		return rsaKey, nil
 
-	case keys.AlgorithmES256:
+	case keys.AlgorithmES256, keys.AlgorithmES512:
 		if key.KeyPair == nil {
 			return nil, fmt.Errorf("ECDSA key not found")
 		}

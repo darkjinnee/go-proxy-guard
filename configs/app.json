@@ -12,9 +12,11 @@
     "max_jwt_size_bytes": 4096,
     "alg_supported": [
       "HS256",
+      "HS512",
       "RS256",
       "RS512",
       "ES256",
+      "ES512",
       "EdDSA"
     ],
     "typ_supported": [

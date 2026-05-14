@@ -10,9 +10,11 @@ type Algorithm string
 
 const (
 	AlgorithmHS256 Algorithm = "HS256"
+	AlgorithmHS512 Algorithm = "HS512"
 	AlgorithmRS256 Algorithm = "RS256"
 	AlgorithmRS512 Algorithm = "RS512"
 	AlgorithmES256 Algorithm = "ES256"
+	AlgorithmES512 Algorithm = "ES512"
 	AlgorithmEdDSA Algorithm = "EdDSA"
 )
 
@@ -20,9 +22,9 @@ const (
 type KeyStatus string
 
 const (
-	StatusActive    KeyStatus = "active"
+	StatusActive     KeyStatus = "active"
 	StatusDeprecated KeyStatus = "deprecated"
-	StatusBackup    KeyStatus = "backup"
+	StatusBackup     KeyStatus = "backup"
 )
 
 // KeyMetadata представляет метаданные ключа
@@ -42,8 +44,8 @@ type KeyPair struct {
 // Key представляет ключ (для симметричных алгоритмов) или пару ключей
 type Key struct {
 	Metadata KeyMetadata
-	HMAC     []byte   // Для HS256
-	KeyPair  *KeyPair // Для RS256, RS512, ES256, EdDSA
+	HMAC     []byte   // Для HS256, HS512
+	KeyPair  *KeyPair // Для RS256, RS512, ES256, ES512, EdDSA
 }
 
 // KeyStore представляет интерфейс для работы с ключами
@@ -54,4 +56,3 @@ type KeyStore interface {
 	RegenerateKey(algorithm Algorithm) (*Key, error)
 	ListKeys() ([]KeyMetadata, error)
 }
-
