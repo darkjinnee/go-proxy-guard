@@ -5,9 +5,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"strings"
 
 	"go-proxy-guard/internal/auth"
+	"go-proxy-guard/internal/clientip"
 	"go-proxy-guard/internal/config"
 	"go-proxy-guard/internal/logger"
 	"go-proxy-guard/internal/proxy"
@@ -44,7 +44,11 @@ func handleGenerateTokens(
 		defer r.Body.Close()
 
 		// Извлекаем IP клиента
-		clientIP := extractClientIP(r)
+		clientIP := clientip.ClientIP(
+			r.RemoteAddr,
+			r.Header.Get("X-Forwarded-For"),
+			r.Header.Get("X-Real-IP"),
+		)
 
 		body, err := readRequestBodyLimited(r, cfg.Proxy.MaxBodySizeMB)
 		if errors.Is(err, errRequestEntityTooLarge) {
@@ -96,7 +100,11 @@ func handleRefreshTokens(
 		defer r.Body.Close()
 
 		// Извлекаем IP клиента
-		clientIP := extractClientIP(r)
+		clientIP := clientip.ClientIP(
+			r.RemoteAddr,
+			r.Header.Get("X-Forwarded-For"),
+			r.Header.Get("X-Real-IP"),
+		)
 
 		body, err := readRequestBodyLimited(r, cfg.Proxy.MaxBodySizeMB)
 		if errors.Is(err, errRequestEntityTooLarge) {
@@ -223,36 +231,4 @@ func handleProxyError(w http.ResponseWriter, err error, log logger.Logger) {
 
 	log.Error("Unknown proxy error", logger.NewField("error", err.Error()))
 	http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-}
-
-// extractClientIP извлекает IP адрес клиента из запроса
-func extractClientIP(r *http.Request) string {
-	// Приоритет: X-Forwarded-For > X-Real-IP > RemoteAddr
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		ips := strings.Split(xff, ",")
-		if len(ips) > 0 {
-			ip := strings.TrimSpace(ips[0])
-			if idx := strings.Index(ip, ":"); idx != -1 {
-				ip = ip[:idx]
-			}
-			return ip
-		}
-	}
-
-	if xri := r.Header.Get("X-Real-IP"); xri != "" {
-		ip := strings.TrimSpace(xri)
-		if idx := strings.Index(ip, ":"); idx != -1 {
-			ip = ip[:idx]
-		}
-		return ip
-	}
-
-	if r.RemoteAddr != "" {
-		if idx := strings.LastIndex(r.RemoteAddr, ":"); idx != -1 {
-			return r.RemoteAddr[:idx]
-		}
-		return r.RemoteAddr
-	}
-
-	return ""
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"go-proxy-guard/internal/clientip"
 	"go-proxy-guard/internal/logger"
 )
 
@@ -29,7 +30,11 @@ func loggingMiddleware(next http.Handler, log logger.Logger) http.Handler {
 			logger.NewField("host", r.Host),
 			logger.NewField("status_code", wrapped.statusCode),
 			logger.NewField("duration_ms", duration.Milliseconds()),
-			logger.NewField("client_ip", extractClientIP(r)),
+			logger.NewField("client_ip", clientip.ClientIP(
+				r.RemoteAddr,
+				r.Header.Get("X-Forwarded-For"),
+				r.Header.Get("X-Real-IP"),
+			)),
 		)
 	})
 }

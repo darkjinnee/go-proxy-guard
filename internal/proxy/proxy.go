@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"go-proxy-guard/internal/clientip"
 	"go-proxy-guard/internal/config"
 	"go-proxy-guard/internal/keys"
 	"go-proxy-guard/pkg/jwt"
@@ -39,7 +40,7 @@ func (s *Service) ProxyRequest(ctx context.Context, req *ProxyRequest) (*ProxyRe
 	}
 
 	// Извлекаем IP клиента
-	clientIP := extractClientIP(req.RemoteAddr, req.XForwardedFor, req.XRealIP)
+	clientIP := clientip.ClientIP(req.RemoteAddr, req.XForwardedFor, req.XRealIP)
 
 	// 3. Извлечение токена
 	token, err := extractTokenFromHeader(req.Headers["Authorization"])
