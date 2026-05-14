@@ -70,7 +70,12 @@ func (s *FileStore) saveRSAKey(key *Key) error {
 		return fmt.Errorf("ошибка шифрования приватного ключа: %w", err)
 	}
 
-	privateFilename := fmt.Sprintf("rsa_%s.private", key.Metadata.ID)
+	prefix, err := rsaNamePrefix(key.Metadata.Algorithm)
+	if err != nil {
+		return err
+	}
+
+	privateFilename := fmt.Sprintf("%s%s.private", prefix, key.Metadata.ID)
 	privatePath := filepath.Join(s.keysDir, privateFilename)
 	if err := os.WriteFile(privatePath, encryptedPrivate, 0600); err != nil {
 		return fmt.Errorf("ошибка записи приватного ключа: %w", err)
@@ -93,7 +98,7 @@ func (s *FileStore) saveRSAKey(key *Key) error {
 		return fmt.Errorf("ошибка шифрования публичного ключа: %w", err)
 	}
 
-	publicFilename := fmt.Sprintf("rsa_%s.public", key.Metadata.ID)
+	publicFilename := fmt.Sprintf("%s%s.public", prefix, key.Metadata.ID)
 	publicPath := filepath.Join(s.keysDir, publicFilename)
 	if err := os.WriteFile(publicPath, encryptedPublic, 0600); err != nil {
 		return fmt.Errorf("ошибка записи публичного ключа: %w", err)
@@ -218,9 +223,13 @@ func (s *FileStore) backupKey(key *Key) error {
 	case AlgorithmHS256:
 		files = []string{fmt.Sprintf("hmac_%s.key", key.Metadata.ID)}
 	case AlgorithmRS256, AlgorithmRS512:
+		prefix, err := rsaNamePrefix(key.Metadata.Algorithm)
+		if err != nil {
+			return err
+		}
 		files = []string{
-			fmt.Sprintf("rsa_%s.private", key.Metadata.ID),
-			fmt.Sprintf("rsa_%s.public", key.Metadata.ID),
+			fmt.Sprintf("%s%s.private", prefix, key.Metadata.ID),
+			fmt.Sprintf("%s%s.public", prefix, key.Metadata.ID),
 		}
 	case AlgorithmES256:
 		files = []string{
@@ -254,4 +263,3 @@ func (s *FileStore) backupKey(key *Key) error {
 
 	return nil
 }
-

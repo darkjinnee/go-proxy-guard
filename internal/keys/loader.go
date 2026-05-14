@@ -39,11 +39,8 @@ func (s *FileStore) loadKeys() error {
 		var keyID string
 		if strings.HasPrefix(name, "hmac_") && strings.HasSuffix(name, ".key") {
 			keyID = strings.TrimPrefix(strings.TrimSuffix(name, ".key"), "hmac_")
-		} else if strings.HasPrefix(name, "rsa_") {
-			parts := strings.Split(strings.TrimSuffix(strings.TrimSuffix(name, ".private"), ".public"), "_")
-			if len(parts) == 2 {
-				keyID = parts[1]
-			}
+		} else if _, kid, ok := parseRSAKeyFilename(name); ok {
+			keyID = kid
 		} else if strings.HasPrefix(name, "ecdsa_") {
 			parts := strings.Split(strings.TrimSuffix(strings.TrimSuffix(name, ".private"), ".public"), "_")
 			if len(parts) == 2 {
@@ -73,8 +70,8 @@ func (s *FileStore) loadKeys() error {
 		firstFile := files[0]
 		if strings.HasPrefix(firstFile, "hmac_") {
 			algorithm = AlgorithmHS256
-		} else if strings.HasPrefix(firstFile, "rsa_") {
-			algorithm = AlgorithmRS256 // Можно определить точнее по размеру ключа
+		} else if alg, _, ok := parseRSAKeyFilename(firstFile); ok {
+			algorithm = alg
 		} else if strings.HasPrefix(firstFile, "ecdsa_") {
 			algorithm = AlgorithmES256
 		} else if strings.HasPrefix(firstFile, "eddsa_") {
@@ -118,7 +115,7 @@ func (s *FileStore) loadKey(keyID string, algorithm Algorithm) (*Key, error) {
 		key.HMAC = hmacKey
 
 	case AlgorithmRS256, AlgorithmRS512:
-		keyPair, err := s.loadRSAKey(keyID)
+		keyPair, err := s.loadRSAKey(keyID, algorithm)
 		if err != nil {
 			return nil, err
 		}
@@ -170,9 +167,14 @@ func (s *FileStore) loadHMACKey(keyID string) ([]byte, error) {
 	return decrypted, nil
 }
 
-// loadRSAKey загружает RSA ключ
-func (s *FileStore) loadRSAKey(keyID string) (*KeyPair, error) {
-	privateFilename := fmt.Sprintf("rsa_%s.private", keyID)
+// loadRSAKey загружает RSA ключ (файлы rsa256_<id>.* или rsa512_<id>.*).
+func (s *FileStore) loadRSAKey(keyID string, algorithm Algorithm) (*KeyPair, error) {
+	prefix, err := rsaNamePrefix(algorithm)
+	if err != nil {
+		return nil, err
+	}
+
+	privateFilename := fmt.Sprintf("%s%s.private", prefix, keyID)
 	privatePath := filepath.Join(s.keysDir, privateFilename)
 
 	encryptedPrivate, err := os.ReadFile(privatePath)
@@ -266,4 +268,3 @@ func (s *FileStore) loadEdDSAKey(keyID string) (*KeyPair, error) {
 		Public:  publicKey,
 	}, nil
 }
-
