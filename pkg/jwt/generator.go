@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"crypto/ecdsa"
-	"crypto/ed25519"
 	"crypto/rsa"
 	"fmt"
 	"time"
@@ -28,6 +27,11 @@ func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keySt
 		return "", fmt.Errorf("error getting key: %w", err)
 	}
 
+	method, err := g.getSigningMethod(algorithm)
+	if err != nil {
+		return "", err
+	}
+
 	// Преобразуем claims в jwt.MapClaims
 	jwtClaims := jwt.MapClaims{}
 	for k, v := range claims {
@@ -35,7 +39,7 @@ func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keySt
 	}
 
 	// Создаем токен
-	token := jwt.NewWithClaims(g.getSigningMethod(algorithm), jwtClaims)
+	token := jwt.NewWithClaims(method, jwtClaims)
 
 	// Добавляем kid в заголовок, если указан, иначе используем ID ключа
 	if kid != "" {
@@ -61,36 +65,24 @@ func (g *generator) GenerateToken(claims Claims, algorithm keys.Algorithm, keySt
 }
 
 // getSigningMethod возвращает метод подписи для алгоритма
-func (g *generator) getSigningMethod(algorithm keys.Algorithm) jwt.SigningMethod {
+func (g *generator) getSigningMethod(algorithm keys.Algorithm) (jwt.SigningMethod, error) {
 	switch algorithm {
-	case keys.AlgorithmHS256:
-		return jwt.SigningMethodHS256
-	case keys.AlgorithmHS512:
-		return jwt.SigningMethodHS512
 	case keys.AlgorithmRS256:
-		return jwt.SigningMethodRS256
+		return jwt.SigningMethodRS256, nil
 	case keys.AlgorithmRS512:
-		return jwt.SigningMethodRS512
+		return jwt.SigningMethodRS512, nil
 	case keys.AlgorithmES256:
-		return jwt.SigningMethodES256
+		return jwt.SigningMethodES256, nil
 	case keys.AlgorithmES512:
-		return jwt.SigningMethodES512
-	case keys.AlgorithmEdDSA:
-		return jwt.SigningMethodEdDSA
+		return jwt.SigningMethodES512, nil
 	default:
-		return jwt.SigningMethodHS256
+		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)
 	}
 }
 
 // getSigningKey возвращает ключ для подписи в зависимости от алгоритма
 func (g *generator) getSigningKey(key *keys.Key, algorithm keys.Algorithm) (interface{}, error) {
 	switch algorithm {
-	case keys.AlgorithmHS256, keys.AlgorithmHS512:
-		if key.HMAC == nil {
-			return nil, fmt.Errorf("HMAC key not found")
-		}
-		return key.HMAC, nil
-
 	case keys.AlgorithmRS256, keys.AlgorithmRS512:
 		if key.KeyPair == nil {
 			return nil, fmt.Errorf("RSA key not found")
@@ -110,16 +102,6 @@ func (g *generator) getSigningKey(key *keys.Key, algorithm keys.Algorithm) (inte
 			return nil, fmt.Errorf("invalid key type for ECDSA")
 		}
 		return ecdsaKey, nil
-
-	case keys.AlgorithmEdDSA:
-		if key.KeyPair == nil {
-			return nil, fmt.Errorf("EdDSA key not found")
-		}
-		ed25519Key, ok := key.KeyPair.Private.(ed25519.PrivateKey)
-		if !ok {
-			return nil, fmt.Errorf("invalid key type for EdDSA")
-		}
-		return ed25519Key, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)

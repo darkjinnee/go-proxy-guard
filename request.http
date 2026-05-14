@@ -10,23 +10,6 @@
 # Генерация JWT токенов
 ###############################################################################
 
-### Генерация токенов с алгоритмом HS256
-POST {{baseUrl}}/api/v1/tokens/generate
-Content-Type: application/json
-
-{
-  "header": {
-    "alg": "HS256",
-    "typ": "JWT",
-    "kid": "custom-key-id-123"
-  },
-  "payload": {
-    "user_id": "12345",
-    "username": "johndoe",
-    "role": "admin"
-  }
-}
-
 ### Генерация токенов с алгоритмом RS256
 POST {{baseUrl}}/api/v1/tokens/generate
 Content-Type: application/json
@@ -78,19 +61,18 @@ Content-Type: application/json
   }
 }
 
-### Генерация токенов с алгоритмом EdDSA
+### Генерация токенов с алгоритмом ES512
 POST {{baseUrl}}/api/v1/tokens/generate
 Content-Type: application/json
 
 {
   "header": {
-    "alg": "EdDSA",
-    "typ": "JWT",
-    "kid": "eddsa-key-789"
+    "alg": "ES512",
+    "typ": "JWT"
   },
   "payload": {
     "user_id": "33333",
-    "username": "eddsa_user",
+    "username": "es512_user",
     "role": "user"
   }
 }
@@ -112,7 +94,7 @@ POST {{baseUrl}}/api/v1/tokens/refresh
 Content-Type: application/json
 
 {
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoicmVmcmVzaCIsInVzZXJfaWQiOiIxMjM0NSIsInVzZXJuYW1lIjoiam9obmRvZSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcwNTkzMjgwMCwiaWF0IjoxNzA1MzI0MDAwfQ.signature"
+  "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoicmVmcmVzaCIsInVzZXJfaWQiOiIxMjM0NSIsInVzZXJuYW1lIjoiam9obmRvZSIsInJvbGUiOiJhZG1pbiIsImV4cCI6MTcwNTkzMjgwMCwiaWF0IjoxNzA1MzI0MDAwfQ.signature"
 }
 
 ###############################################################################
@@ -223,7 +205,7 @@ Content-Type: application/json
 
 {
   "header": {
-    "alg": "HS512",
+    "alg": "HS256",
     "typ": "JWT"
   },
   "payload": {
@@ -247,7 +229,7 @@ Authorization: Bearer invalid-token-here
 ### Ошибка 401: Истекший токен
 GET {{baseUrl}}/v1/users/123
 Host: api.example.com
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjAwMDAwMDAwfQ.expired
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0eXBlIjoiYWNjZXNzIiwiZXhwIjoxNjAwMDAwMDAwfQ.expired
 
 ### Ошибка 400: Отсутствует Host header
 GET {{baseUrl}}/v1/users/123
@@ -318,7 +300,7 @@ X-Forwarded-For: 192.168.1.100
 # 3. Домены (Host header) должны быть настроены в configs/proxy.json
 #    В примерах используются: api.example.com, admin.example.com, example.loc
 #
-# 4. Поддерживаемые алгоритмы: HS256, RS256, RS512, ES256, EdDSA
+# 4. Поддерживаемые алгоритмы: RS256, RS512, ES256, ES512
 #
 # 5. Время жизни токенов настраивается в configs/app.json:
 #    - access_token: token.exp (в минутах)

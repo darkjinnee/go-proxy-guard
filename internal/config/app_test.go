@@ -23,7 +23,7 @@ func TestLoadAppConfig(t *testing.T) {
 			"exp": 1440,
 			"refresh_exp": 10080,
 			"max_jwt_size_bytes": 4096,
-			"alg_supported": ["HS256", "RS256"],
+			"alg_supported": ["RS256", "ES256"],
 			"typ_supported": ["JWT"],
 			"ip_whitelist": []
 		},
@@ -89,7 +89,7 @@ func TestAppConfig_Validate(t *testing.T) {
 					Exp:             1440,
 					RefreshExp:      10080,
 					MaxJWTSizeBytes: 4096,
-					AlgSupported:    []string{"HS256"},
+					AlgSupported:    []string{"RS256"},
 					TypSupported:    []string{"JWT"},
 				},
 				Redis: RedisConfig{

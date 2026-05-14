@@ -11,13 +11,10 @@
     "refresh_exp": 10080,
     "max_jwt_size_bytes": 4096,
     "alg_supported": [
-      "HS256",
-      "HS512",
       "RS256",
       "RS512",
       "ES256",
-      "ES512",
-      "EdDSA"
+      "ES512"
     ],
     "typ_supported": [
       "JWT"
@@ -46,4 +43,3 @@
     "dir": "./keys"
   }
 }
-

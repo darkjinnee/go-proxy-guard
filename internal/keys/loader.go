@@ -1,9 +1,7 @@
 package keys
 
 import (
-	"crypto/ed25519"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -37,17 +35,10 @@ func (s *FileStore) loadKeys() error {
 
 		// Парсим имя файла для извлечения ID
 		var keyID string
-		if _, kid, ok := parseHSKeyFilename(name); ok {
-			keyID = kid
-		} else if _, kid, ok := parseRSAKeyFilename(name); ok {
+		if _, kid, ok := parseRSAKeyFilename(name); ok {
 			keyID = kid
 		} else if _, kid, ok := parseESKeyFilename(name); ok {
 			keyID = kid
-		} else if strings.HasPrefix(name, "eddsa_") {
-			parts := strings.Split(strings.TrimSuffix(strings.TrimSuffix(name, ".private"), ".public"), "_")
-			if len(parts) == 2 {
-				keyID = parts[1]
-			}
 		}
 
 		if keyID == "" {
@@ -65,14 +56,10 @@ func (s *FileStore) loadKeys() error {
 		// Определяем алгоритм по первому файлу
 		var algorithm Algorithm
 		firstFile := files[0]
-		if alg, _, ok := parseHSKeyFilename(firstFile); ok {
-			algorithm = alg
-		} else if alg, _, ok := parseRSAKeyFilename(firstFile); ok {
+		if alg, _, ok := parseRSAKeyFilename(firstFile); ok {
 			algorithm = alg
 		} else if alg, _, ok := parseESKeyFilename(firstFile); ok {
 			algorithm = alg
-		} else if strings.HasPrefix(firstFile, "eddsa_") {
-			algorithm = AlgorithmEdDSA
 		} else {
 			continue
 		}
@@ -104,13 +91,6 @@ func (s *FileStore) loadKey(keyID string, algorithm Algorithm) (*Key, error) {
 	}
 
 	switch algorithm {
-	case AlgorithmHS256, AlgorithmHS512:
-		hmacKey, err := s.loadHMACKey(keyID, algorithm)
-		if err != nil {
-			return nil, err
-		}
-		key.HMAC = hmacKey
-
 	case AlgorithmRS256, AlgorithmRS512:
 		keyPair, err := s.loadRSAKey(keyID, algorithm)
 		if err != nil {
@@ -125,48 +105,11 @@ func (s *FileStore) loadKey(keyID string, algorithm Algorithm) (*Key, error) {
 		}
 		key.KeyPair = keyPair
 
-	case AlgorithmEdDSA:
-		keyPair, err := s.loadEdDSAKey(keyID)
-		if err != nil {
-			return nil, err
-		}
-		key.KeyPair = keyPair
-
 	default:
 		return nil, fmt.Errorf("неподдерживаемый алгоритм: %s", algorithm)
 	}
 
 	return key, nil
-}
-
-// loadHMACKey загружает HMAC ключ (hs256_<id>.key или hs512_<id>.key).
-func (s *FileStore) loadHMACKey(keyID string, algorithm Algorithm) ([]byte, error) {
-	prefix, err := hsNamePrefix(algorithm)
-	if err != nil {
-		return nil, err
-	}
-
-	filename := fmt.Sprintf("%s%s.key", prefix, keyID)
-	path := filepath.Join(s.keysDir, filename)
-
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения файла: %w", err)
-	}
-
-	// Декодируем из base64
-	encrypted, err := base64.StdEncoding.DecodeString(string(data))
-	if err != nil {
-		return nil, fmt.Errorf("ошибка декодирования base64: %w", err)
-	}
-
-	// Расшифровываем
-	decrypted, err := decryptData(encrypted, s.masterKey)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка расшифровки: %w", err)
-	}
-
-	return decrypted, nil
 }
 
 // loadRSAKey загружает RSA ключ (файлы rsa256_<id>.* или rsa512_<id>.*).
@@ -242,36 +185,5 @@ func (s *FileStore) loadECDSAKey(keyID string, algorithm Algorithm) (*KeyPair, e
 	return &KeyPair{
 		Private: privateKey,
 		Public:  privateKey.Public(),
-	}, nil
-}
-
-// loadEdDSAKey загружает EdDSA ключ
-func (s *FileStore) loadEdDSAKey(keyID string) (*KeyPair, error) {
-	privateFilename := fmt.Sprintf("eddsa_%s.private", keyID)
-	privatePath := filepath.Join(s.keysDir, privateFilename)
-
-	encryptedPrivate, err := os.ReadFile(privatePath)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка чтения приватного ключа: %w", err)
-	}
-
-	// Расшифровываем приватный ключ
-	privatePEM, err := decryptData(encryptedPrivate, s.masterKey)
-	if err != nil {
-		return nil, fmt.Errorf("ошибка расшифровки приватного ключа: %w", err)
-	}
-
-	// Декодируем PEM
-	block, _ := pem.Decode(privatePEM)
-	if block == nil {
-		return nil, fmt.Errorf("ошибка декодирования PEM")
-	}
-
-	privateKey := ed25519.PrivateKey(block.Bytes)
-	publicKey := privateKey.Public().(ed25519.PublicKey)
-
-	return &KeyPair{
-		Private: privateKey,
-		Public:  publicKey,
 	}, nil
 }

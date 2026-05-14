@@ -9,13 +9,10 @@ import (
 type Algorithm string
 
 const (
-	AlgorithmHS256 Algorithm = "HS256"
-	AlgorithmHS512 Algorithm = "HS512"
 	AlgorithmRS256 Algorithm = "RS256"
 	AlgorithmRS512 Algorithm = "RS512"
 	AlgorithmES256 Algorithm = "ES256"
 	AlgorithmES512 Algorithm = "ES512"
-	AlgorithmEdDSA Algorithm = "EdDSA"
 )
 
 // KeyStatus представляет статус ключа
@@ -41,11 +38,10 @@ type KeyPair struct {
 	Public  crypto.PublicKey
 }
 
-// Key представляет ключ (для симметричных алгоритмов) или пару ключей
+// Key представляет пару ключей для подписи JWT
 type Key struct {
 	Metadata KeyMetadata
-	HMAC     []byte   // Для HS256, HS512
-	KeyPair  *KeyPair // Для RS256, RS512, ES256, ES512, EdDSA
+	KeyPair  *KeyPair
 }
 
 // KeyStore представляет интерфейс для работы с ключами

@@ -42,7 +42,7 @@ func TestBuildClaims(t *testing.T) {
 	}
 }
 
-func TestGenerateToken_HS256(t *testing.T) {
+func TestGenerateToken_RS256(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Создаем keyStore
@@ -52,7 +52,7 @@ func TestGenerateToken_HS256(t *testing.T) {
 	}
 
 	// Генерируем ключ
-	_, err = keyStore.GenerateKey(keys.AlgorithmHS256)
+	_, err = keyStore.GenerateKey(keys.AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка генерации ключа: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestGenerateToken_HS256(t *testing.T) {
 	claims := BuildClaims(TokenTypeAccess, "test-jti", Claims{"user_id": "123"}, 60)
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
+	token, err := gen.GenerateToken(claims, keys.AlgorithmRS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestGenerateToken_WithKid(t *testing.T) {
 	}
 
 	// Генерируем ключ
-	key, err := keyStore.GenerateKey(keys.AlgorithmHS256)
+	key, err := keyStore.GenerateKey(keys.AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка генерации ключа: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestGenerateToken_WithKid(t *testing.T) {
 
 	// Генерируем токен с указанным kid
 	customKid := "custom-key-id-123"
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, customKid)
+	token, err := gen.GenerateToken(claims, keys.AlgorithmRS256, keyStore, customKid)
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestGenerateToken_WithKid(t *testing.T) {
 	}
 
 	// Тестируем генерацию без kid (должен использоваться ID ключа)
-	token2, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
+	token2, err := gen.GenerateToken(claims, keys.AlgorithmRS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена без kid: %v", err)
 	}

@@ -8,13 +8,10 @@ import (
 
 func TestGenerateKey(t *testing.T) {
 	algorithms := []Algorithm{
-		AlgorithmHS256,
-		AlgorithmHS512,
 		AlgorithmRS256,
 		AlgorithmRS512,
 		AlgorithmES256,
 		AlgorithmES512,
-		AlgorithmEdDSA,
 	}
 
 	for _, alg := range algorithms {
@@ -36,26 +33,14 @@ func TestGenerateKey(t *testing.T) {
 				t.Errorf("Ожидался статус %s, получен %s", StatusActive, key.Metadata.Status)
 			}
 
-			// Проверяем наличие ключа в зависимости от алгоритма
-			switch alg {
-			case AlgorithmHS256:
-				if key.HMAC == nil || len(key.HMAC) != 32 {
-					t.Errorf("HMAC ключ HS256: ожидалось 32 байта, len=%d", len(key.HMAC))
-				}
-			case AlgorithmHS512:
-				if key.HMAC == nil || len(key.HMAC) != 64 {
-					t.Errorf("HMAC ключ HS512: ожидалось 64 байта, len=%d", len(key.HMAC))
-				}
-			case AlgorithmRS256, AlgorithmRS512, AlgorithmES256, AlgorithmES512, AlgorithmEdDSA:
-				if key.KeyPair == nil {
-					t.Error("Пара ключей не сгенерирована")
-				}
-				if key.KeyPair.Private == nil {
-					t.Error("Приватный ключ не сгенерирован")
-				}
-				if key.KeyPair.Public == nil {
-					t.Error("Публичный ключ не сгенерирован")
-				}
+			if key.KeyPair == nil {
+				t.Error("Пара ключей не сгенерирована")
+			}
+			if key.KeyPair.Private == nil {
+				t.Error("Приватный ключ не сгенерирован")
+			}
+			if key.KeyPair.Public == nil {
+				t.Error("Публичный ключ не сгенерирован")
 			}
 		})
 	}
@@ -70,7 +55,7 @@ func TestFileStore(t *testing.T) {
 	}
 
 	// Генерируем ключ
-	key, err := store.GenerateKey(AlgorithmHS256)
+	key, err := store.GenerateKey(AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка генерации ключа: %v", err)
 	}
@@ -81,7 +66,7 @@ func TestFileStore(t *testing.T) {
 	}
 
 	// Загружаем ключ обратно
-	loadedKey, err := store.GetKey(AlgorithmHS256)
+	loadedKey, err := store.GetKey(AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка загрузки ключа: %v", err)
 	}
@@ -90,8 +75,8 @@ func TestFileStore(t *testing.T) {
 		t.Errorf("ID ключа не совпадает: ожидался %s, получен %s", key.Metadata.ID, loadedKey.Metadata.ID)
 	}
 
-	if len(loadedKey.HMAC) != len(key.HMAC) {
-		t.Error("Размер HMAC ключа не совпадает")
+	if loadedKey.KeyPair == nil || key.KeyPair == nil {
+		t.Fatal("KeyPair не должен быть nil")
 	}
 }
 
@@ -104,13 +89,13 @@ func TestFileStore_RegenerateKey(t *testing.T) {
 	}
 
 	// Генерируем первый ключ
-	key1, err := store.GenerateKey(AlgorithmHS256)
+	key1, err := store.GenerateKey(AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка генерации ключа: %v", err)
 	}
 
 	// Регенерируем ключ
-	key2, err := store.RegenerateKey(AlgorithmHS256)
+	key2, err := store.RegenerateKey(AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка регенерации ключа: %v", err)
 	}
@@ -121,7 +106,7 @@ func TestFileStore_RegenerateKey(t *testing.T) {
 	}
 
 	// Проверяем, что создана резервная копия
-	backupPath := filepath.Join(tmpDir, "hs256_"+key1.Metadata.ID+".key.backup")
+	backupPath := filepath.Join(tmpDir, "rsa256_"+key1.Metadata.ID+".private.backup")
 	if _, err := os.Stat(backupPath); os.IsNotExist(err) {
 		t.Error("Резервная копия не создана")
 	}
@@ -165,7 +150,7 @@ func TestInitializeKeys(t *testing.T) {
 		t.Fatalf("Ошибка создания хранилища: %v", err)
 	}
 
-	algorithms := []string{"HS256", "HS512", "RS256", "RS512", "ES256", "ES512"}
+	algorithms := []string{"RS256", "RS512", "ES256", "ES512"}
 
 	// Инициализируем ключи
 	if err := store.InitializeKeys(algorithms); err != nil {

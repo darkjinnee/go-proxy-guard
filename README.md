@@ -8,7 +8,7 @@ REST API сервис для аутентификации и авторизац�
 
 ## Основные возможности
 
-- Генерация пары JWT токенов (access_token и refresh_token) с поддержкой алгоритмов подписи: HS256, HS512, RS256, RS512, ES256, ES512, EdDSA
+- Генерация пары JWT токенов (access_token и refresh_token) с поддержкой алгоритмов подписи: RS256, RS512, ES256, ES512
 - Обновление токенов на основе валидного refresh_token
 - Защита от повторного использования refresh токенов через Redis
 - Валидация JWT токенов перед проксированием запросов
@@ -75,7 +75,7 @@ REDIS_PORT=6379
 KEYS_DIR=./keys
 LOGGING_LEVEL=debug
 MASTER_KEY=your-master-key-here
-# TOKEN_ALG_SUPPORTED=HS256,HS512,RS256,RS512,ES256,ES512,EdDSA
+# TOKEN_ALG_SUPPORTED=RS256,RS512,ES256,ES512
 ```
 
 #### Запуск
@@ -114,7 +114,7 @@ docker compose -f compose.yml up -d --build
 - `APP_CONFIG` — путь к файлу app.json (по умолчанию `/app/configs/app.json`)
 - `PROXY_CONFIG` — путь к файлу proxy.json (по умолчанию `/app/configs/proxy.json`)
 - `KEYS_DIR` — директория для хранения ключей (по умолчанию `/var/lib/go-proxy-guard/keys`)
-- `TOKEN_ALG_SUPPORTED` — (опционально) переопределение списка алгоритмов через запятую, например `HS256,RS256,ES256`
+- `TOKEN_ALG_SUPPORTED` — (опционально) переопределение списка алгоритмов через запятую, например `RS256,ES256`
 
 #### Просмотр логов
 
@@ -146,13 +146,10 @@ docker compose down
 
 | Значение | JWT | Файлы в `keys.dir` (префикс + UUID) |
 |----------|-----|-------------------------------------|
-| `HS256` | HMAC-SHA256 | `hs256_<id>.key` |
-| `HS512` | HMAC-SHA512 | `hs512_<id>.key` |
 | `RS256` | RSA + SHA-256 (2048 бит) | `rsa256_<id>.private`, `rsa256_<id>.public` |
 | `RS512` | RSA + SHA-512 (4096 бит) | `rsa512_<id>.private`, `rsa512_<id>.public` |
 | `ES256` | ECDSA P-256 + SHA-256 | `es256_<id>.private`, `es256_<id>.public` |
 | `ES512` | ECDSA P-521 + SHA-512 | `es512_<id>.private`, `es512_<id>.public` |
-| `EdDSA` | Ed25519 | `eddsa_<id>.private`, `eddsa_<id>.public` |
 
 Секреты на диске шифруются мастер-ключом (`MASTER_KEY` или `master.key` в каталоге ключей).
 
@@ -209,7 +206,7 @@ Content-Type: application/json
 
 {
   "header": {
-    "alg": "HS256",
+    "alg": "RS256",
     "typ": "JWT",
     "kid": "custom-key-id-123"
   },
@@ -222,7 +219,7 @@ Content-Type: application/json
 ```
 
 **Параметры запроса**:
-- `header.alg` (required): Алгоритм подписи токена — одно из значений из `token.alg_supported` / `TOKEN_ALG_SUPPORTED` (см. таблицу выше: HS256, HS512, RS256, RS512, ES256, ES512, EdDSA)
+- `header.alg` (required): Алгоритм подписи токена — одно из значений из `token.alg_supported` / `TOKEN_ALG_SUPPORTED` (см. таблицу выше: RS256, RS512, ES256, ES512)
 - `header.typ` (required): Тип токена (JWT)
 - `header.kid` (optional): Key ID для идентификации ключа в заголовке токена. Если не указан, используется ID ключа из хранилища
 - `payload.*` (required): Claims токена (данные пользователя)
@@ -230,8 +227,8 @@ Content-Type: application/json
 **Ответ:**
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
@@ -242,15 +239,15 @@ POST /api/v1/tokens/refresh
 Content-Type: application/json
 
 {
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
 **Ответ:**
 ```json
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
@@ -261,7 +258,7 @@ Content-Type: application/json
 ```bash
 GET /v1/users/123
 Host: api.example.com
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 Claims из токена автоматически добавляются в заголовки `X-JWT-*`.

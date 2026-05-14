@@ -2,7 +2,6 @@ package jwt
 
 import (
 	"crypto/ecdsa"
-	"crypto/ed25519"
 	"crypto/rsa"
 	"fmt"
 	"time"
@@ -28,10 +27,15 @@ func (v *validator) ValidateToken(token string, algorithm keys.Algorithm, keySto
 		return nil, fmt.Errorf("error getting key: %w", err)
 	}
 
+	expectedMethod, err := v.getSigningMethod(algorithm)
+	if err != nil {
+		return nil, err
+	}
+
 	// Парсим токен
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		// Проверяем алгоритм
-		if token.Method != v.getSigningMethod(algorithm) {
+		if token.Method != expectedMethod {
 			return nil, fmt.Errorf("invalid signing algorithm: %v", token.Method.Alg())
 		}
 
@@ -84,36 +88,24 @@ func (v *validator) ValidateTokenType(token string, expectedType TokenType, algo
 }
 
 // getSigningMethod возвращает метод подписи для алгоритма
-func (v *validator) getSigningMethod(algorithm keys.Algorithm) jwt.SigningMethod {
+func (v *validator) getSigningMethod(algorithm keys.Algorithm) (jwt.SigningMethod, error) {
 	switch algorithm {
-	case keys.AlgorithmHS256:
-		return jwt.SigningMethodHS256
-	case keys.AlgorithmHS512:
-		return jwt.SigningMethodHS512
 	case keys.AlgorithmRS256:
-		return jwt.SigningMethodRS256
+		return jwt.SigningMethodRS256, nil
 	case keys.AlgorithmRS512:
-		return jwt.SigningMethodRS512
+		return jwt.SigningMethodRS512, nil
 	case keys.AlgorithmES256:
-		return jwt.SigningMethodES256
+		return jwt.SigningMethodES256, nil
 	case keys.AlgorithmES512:
-		return jwt.SigningMethodES512
-	case keys.AlgorithmEdDSA:
-		return jwt.SigningMethodEdDSA
+		return jwt.SigningMethodES512, nil
 	default:
-		return jwt.SigningMethodHS256
+		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)
 	}
 }
 
 // getVerificationKey возвращает ключ для проверки подписи
 func (v *validator) getVerificationKey(key *keys.Key, algorithm keys.Algorithm) (interface{}, error) {
 	switch algorithm {
-	case keys.AlgorithmHS256, keys.AlgorithmHS512:
-		if key.HMAC == nil {
-			return nil, fmt.Errorf("HMAC key not found")
-		}
-		return key.HMAC, nil
-
 	case keys.AlgorithmRS256, keys.AlgorithmRS512:
 		if key.KeyPair == nil {
 			return nil, fmt.Errorf("RSA key not found")
@@ -133,16 +125,6 @@ func (v *validator) getVerificationKey(key *keys.Key, algorithm keys.Algorithm) 
 			return nil, fmt.Errorf("invalid public key type for ECDSA")
 		}
 		return ecdsaKey, nil
-
-	case keys.AlgorithmEdDSA:
-		if key.KeyPair == nil {
-			return nil, fmt.Errorf("EdDSA key not found")
-		}
-		ed25519Key, ok := key.KeyPair.Public.(ed25519.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("invalid public key type for EdDSA")
-		}
-		return ed25519Key, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported algorithm: %s", algorithm)

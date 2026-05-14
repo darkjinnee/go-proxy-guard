@@ -7,7 +7,7 @@ import (
 	"go-proxy-guard/internal/keys"
 )
 
-func TestValidateToken_HS256(t *testing.T) {
+func TestValidateToken_RS256(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	// Создаем keyStore
@@ -17,7 +17,7 @@ func TestValidateToken_HS256(t *testing.T) {
 	}
 
 	// Генерируем ключ
-	_, err = keyStore.GenerateKey(keys.AlgorithmHS256)
+	_, err = keyStore.GenerateKey(keys.AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка генерации ключа: %v", err)
 	}
@@ -37,13 +37,13 @@ func TestValidateToken_HS256(t *testing.T) {
 	}
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
+	token, err := gen.GenerateToken(claims, keys.AlgorithmRS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
 
 	// Валидируем токен
-	validatedClaims, err := val.ValidateToken(token, keys.AlgorithmHS256, keyStore)
+	validatedClaims, err := val.ValidateToken(token, keys.AlgorithmRS256, keyStore)
 	if err != nil {
 		t.Fatalf("Ошибка валидации токена: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestValidateTokenType(t *testing.T) {
 	}
 
 	// Генерируем ключ
-	_, err = keyStore.GenerateKey(keys.AlgorithmHS256)
+	_, err = keyStore.GenerateKey(keys.AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка генерации ключа: %v", err)
 	}
@@ -92,19 +92,19 @@ func TestValidateTokenType(t *testing.T) {
 	}
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
+	token, err := gen.GenerateToken(claims, keys.AlgorithmRS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
 
 	// Валидируем как access токен (должно пройти)
-	_, err = val.ValidateTokenType(token, TokenTypeAccess, keys.AlgorithmHS256, keyStore)
+	_, err = val.ValidateTokenType(token, TokenTypeAccess, keys.AlgorithmRS256, keyStore)
 	if err != nil {
 		t.Fatalf("Ошибка валидации access токена: %v", err)
 	}
 
 	// Валидируем как refresh токен (должно не пройти)
-	_, err = val.ValidateTokenType(token, TokenTypeRefresh, keys.AlgorithmHS256, keyStore)
+	_, err = val.ValidateTokenType(token, TokenTypeRefresh, keys.AlgorithmRS256, keyStore)
 	if err == nil {
 		t.Error("Ожидалась ошибка при валидации access токена как refresh")
 	}
@@ -120,7 +120,7 @@ func TestValidateToken_Expired(t *testing.T) {
 	}
 
 	// Генерируем ключ
-	_, err = keyStore.GenerateKey(keys.AlgorithmHS256)
+	_, err = keyStore.GenerateKey(keys.AlgorithmRS256)
 	if err != nil {
 		t.Fatalf("Ошибка генерации ключа: %v", err)
 	}
@@ -140,13 +140,13 @@ func TestValidateToken_Expired(t *testing.T) {
 	}
 
 	// Генерируем токен
-	token, err := gen.GenerateToken(claims, keys.AlgorithmHS256, keyStore, "")
+	token, err := gen.GenerateToken(claims, keys.AlgorithmRS256, keyStore, "")
 	if err != nil {
 		t.Fatalf("Ошибка генерации токена: %v", err)
 	}
 
 	// Валидируем токен (должна быть ошибка истечения)
-	_, err = val.ValidateToken(token, keys.AlgorithmHS256, keyStore)
+	_, err = val.ValidateToken(token, keys.AlgorithmRS256, keyStore)
 	if err == nil {
 		t.Error("Ожидалась ошибка истечения токена")
 	}

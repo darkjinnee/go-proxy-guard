@@ -207,7 +207,7 @@ func TestMaskToken(t *testing.T) {
 	}{
 		{
 			name:     "длинный токен",
-			token:    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzNDUiLCJ1c2VybmFtZSI6ImpvaG5kb2UiLCJyb2xlIjoiYWRtaW4ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+			token:    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMTIzNDUiLCJ1c2VybmFtZSI6ImpvaG5kb2UiLCJyb2xlIjoiYWRtaW4ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
 			expected: "eyJhbGciOi...",
 		},
 		{
@@ -242,7 +242,7 @@ func TestSanitizeValue(t *testing.T) {
 		{
 			name:     "токен маскируется",
 			key:      "access_token",
-			value:    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+			value:    "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
 			expected: "eyJhbGciOi...",
 		},
 		{
